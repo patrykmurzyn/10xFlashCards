@@ -1,0 +1,34 @@
+---
+description: Guidelines for React
+globs: **/*.tsx, **/*.jsx
+---
+### Guidelines for React
+
+#### React Coding Standards
+
+- Use functional components with hooks instead of class components
+- Implement React.memo() for expensive components that render often with the same props
+- Utilize React.lazy() and Suspense for code-splitting and performance optimization
+- Use the useCallback hook for event handlers passed to child components to prevent unnecessary re-renders
+- Prefer useMemo for expensive calculations to avoid recomputation on every render
+- Implement useId() for generating unique IDs for accessibility attributes
+- Consider using the new useOptimistic hook for optimistic UI updates in forms
+- Use useTransition for non-urgent state updates to keep the UI responsive
+
+Follow these rules when you write code:
+- Use early returns whenever possible to make the code more readable.
+- Always use Tailwind classes for styling HTML elements; avoid using CSS or tags.
+- Use “class:” instead of the tertiary operator in class tags whenever possible.
+- Use descriptive variable and function/const names. Also, event functions should be named with a “handle” prefix, like “handleClick” for onClick and “handleKeyDown” for onKeyDown.
+- Implement accessibility features on elements. For example, a tag should have a tabindex=“0”, aria-label, on:click, and on:keydown, and similar attributes.
+- Use consts instead of functions, for example, “const toggle = () =>”. Also, define a type if possible.
+
+Key Principles
+- Use functional, declarative programming. Avoid classes.
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+- Favor named exports for components.
+- Use TypeScript for all code. Prefer interfaces over types.
+- File structure: imports, types, main component, subcomponents, helpers, static content.
+- Use Zod for form validation.
+- Use Zustand for state managament.
+- Use Shadcn UI, Radix, and Tailwind CSS for components and styling.

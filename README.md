@@ -1,48 +1,102 @@
-# Astro Starter Kit: Basics
+# 10xFlashCards
 
-```sh
-npm create astro@latest -- --template basics
-```
+## 1. Project Description
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/basics)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/basics/devcontainer.json)
+10xFlashCards is a web application designed to streamline the creation and management of educational flashcards. It leverages Language Models (LLMs) via an API to automatically generate flashcard suggestions based on user-provided text, aiming to reduce the time needed for manual flashcard creation and facilitate efficient spaced repetition learning.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## 2. Tech Stack
 
-![just-the-basics](https://github.com/withastro/astro/assets/2244813/a0a5533c-a856-4198-8470-2d67b1d7c554)
+**Frontend:**
 
-## 🚀 Project Structure
+- Astro 5
+- React 19
+- TypeScript 5
+- Tailwind 4
+- Shadcn UI
 
-Inside of your Astro project, you'll see the following folders and files:
+**Backend:**
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
+- Supabase (PostgreSQL Database, Auth, SDKs)
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+**AI:**
 
-## 🧞 Commands
+- Deepseek r1/v3 via Openrouter.ai API
 
-All commands are run from the root of the project, from a terminal:
+**CI/CD & Hosting:**
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+- GitHub Actions
+- Digital Ocean (Docker)
 
-## 👀 Want to learn more?
+## 3. Getting Started Locally
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Follow these steps to set up the project locally:
+
+**Prerequisites:**
+
+- Node.js (Version `22.14.0` - consider using [nvm](https://github.com/nvm-sh/nvm))
+- npm (usually comes with Node.js)
+- Supabase Account & Project Setup (for database and authentication)
+- OpenRouter.ai API Key (for AI features)
+
+**Installation & Setup:**
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/patrykmurzyn/10xFlashCards.git
+    cd 10xflashcards
+    ```
+2.  **Set Node.js version (if using nvm):**
+    ```bash
+    nvm use
+    ```
+3.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+4.  **Environment Variables:**
+    - Create a `.env` file in the root directory.
+    - Add the necessary environment variables (e.g., Supabase URL, Supabase Anon Key, OpenRouter API Key). Refer to `.env.example`.
+5.  **Database Setup:**
+    - Ensure your Supabase project database schema is set up correctly. (Refer to Supabase project documentation or migration scripts if available).
+6.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+    The application should now be running on `http://localhost:4321` (or the port specified by Astro).
+
+## 4. Available Scripts
+
+The following scripts are available via npm:
+
+- `npm run dev`: Starts the local development server with hot reloading.
+- `npm run build`: Builds the application for production.
+- `npm run preview`: Serves the production build locally for previewing.
+- `npm run astro ...`: Runs Astro CLI commands (e.g., `astro check`, `astro add`).
+
+## 5. Project Scope
+
+**Core Features:**
+
+- Automatic flashcard generation from text using an LLM.
+- Review, edit, approve, or reject AI-generated suggestions.
+- Manual creation, editing, and deletion of flashcards.
+- User registration, login, and account management (including deletion).
+- Integration with a spaced repetition algorithm for learning sessions.
+- Secure storage of user data and flashcards (GDPR compliant).
+- Tracking statistics on AI-generated vs. accepted flashcards.
+
+**Out of Scope (MVP):**
+
+- Custom-built spaced repetition algorithm.
+- Gamification features.
+- Native mobile applications.
+- Support for multiple document formats (PDF, DOCX, etc.).
+- Public API access.
+- Flashcard sharing between users.
+- Advanced notification system.
+- Advanced keyword search for flashcards.
+
+## 6. Project Status
+
+- **Version:** 0.0.1 (as per `package.json`)
+- **Status:** Currently under active development.
