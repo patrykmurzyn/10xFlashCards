@@ -1,12 +1,22 @@
 ---
 import astroLogo from '../assets/astro.svg';
 import background from '../assets/background.svg';
+import { Button } from "@/components/ui/button"
+
 ---
 
 <div id="container">
 	<img id="background" src={background.src} alt="" fetchpriority="high" />
 	<main>
 		<section id="hero">
+			<div class="flex gap-2 mb-4">
+				<Button variant="default">Default</Button>
+				<Button variant="destructive">Destructive</Button>
+				<Button variant="outline">Outline</Button>
+				<Button variant="secondary">Secondary</Button>
+				<Button variant="ghost">Ghost</Button>
+				<Button variant="link">Link</Button>
+			</div>
 			<a href="https://astro.build"
 				><img src={astroLogo.src} width="115" height="48" alt="Astro Homepage" /></a
 			>

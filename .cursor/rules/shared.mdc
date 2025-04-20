@@ -1,15 +1,11 @@
 ---
-description: General ifnormation about project, tech-stack, project structure and code practices
+description: 
 globs: 
 alwaysApply: false
 ---
----
-Rule Type: Always
----
-
 # AI Rules for 10xFlashCards
 
-[overview.md](mdc:.ai/overview.md)
+10xFlashCards is a web application designed to streamline the creation of educational flashcards. The core concept involves leveraging Language Models (LLMs) via API to automatically generate flashcard suggestions based on user-provided text, enabling more efficient management of learning materials.
 
 ## Tech Stack
 
