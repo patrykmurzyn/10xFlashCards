@@ -17,6 +17,7 @@ Manually creating high-quality educational flashcards is a time-consuming and la
 5.  Data Storage: User data (accounts) and flashcard content are stored securely and in a manner that allows for future application scaling.
 6.  AI Usage Tracking: The system collects anonymous statistics regarding the number of flashcards suggested by the AI and the number of flashcards accepted by users after generation.
 7.  Legal Compliance: Users' personal data and the content they create (flashcards) are processed in accordance with applicable data protection regulations (GDPR). Users have the right to access their data and request its deletion (by deleting their account).
+8.  Mandatory Login: Access to all application pages is restricted to authenticated users only. If a user is not logged in, they are automatically redirected to the login page. The interface includes a logout button for authenticated users to end their session.
 
 ## 4. Product Boundaries
 

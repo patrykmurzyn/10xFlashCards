@@ -1,7 +1,21 @@
 ---
 import Layout from './Layout.astro';
+import NavigationMenu from '../components/ui/NavigationMenu';
 ---
 
 <Layout>
-  <slot />
+  <script type="module">
+    import { supabaseClient } from '../db/supabase.client';
+    (async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) window.location.href = '/login';
+      supabaseClient.auth.onAuthStateChange((_event, session) => {
+        if (!session) window.location.href = '/login';
+      });
+    })();
+  </script>
+  <NavigationMenu client:load />
+  <main class="p-6">
+    <slot />
+  </main>
 </Layout> 

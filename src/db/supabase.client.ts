@@ -1,11 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../db/database.types.ts";
 
-const supabaseUrl = import.meta.env.SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.SUPABASE_KEY;
-
-// Default user ID for development purposes
-export const DEFAULT_USER_ID = "3c0f4c21-24cf-4ef5-bae1-8de7e622eeda";
+// Use PUBLIC_ env vars if present, otherwise fallback to server-only vars
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ??
+    import.meta.env.SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_KEY ??
+    import.meta.env.SUPABASE_KEY;
 
 export const supabaseClient = createClient<Database>(
     supabaseUrl,

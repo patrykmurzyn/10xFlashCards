@@ -1,0 +1,45 @@
+2025-04-18T17:55:15.404Z [info]: OpenRouterService initialized with baseUrl=https://openrouter.ai/api/v1 model=deepseek/deepseek-chat-v3-0324:free
+2025-04-18T17:55:15.404Z [info]: Sending chat completion with 2 messages
+2025-04-18T17:55:31.326Z [info]: OpenRouterService initialized with baseUrl=https://openrouter.ai/api/v1 model=deepseek/deepseek-chat-v3-0324:free
+2025-04-18T17:55:31.326Z [info]: Sending chat completion with 2 messages
+2025-04-18T17:55:33.431Z [info]: Received response from OpenRouter
+2025-04-18T17:55:33.431Z [error]: Error in sendChatCompletion Failed to parse JSON response: Unexpected token '`', "```json
+{
+"... is not valid JSON
+2025-04-18T17:55:40.242Z [info]: OpenRouterService initialized with baseUrl=https://openrouter.ai/api/v1 model=deepseek/deepseek-chat-v3-0324:free
+2025-04-18T17:55:40.242Z [info]: Sending chat completion with 2 messages
+2025-04-18T17:55:47.398Z [info]: Received response from OpenRouter
+2025-04-18T17:55:47.398Z [error]: Error in sendChatCompletion Failed to parse JSON response: Unexpected token '`', "```json
+{
+"... is not valid JSON
+2025-04-18T17:56:00.774Z [info]: Received response from OpenRouter
+2025-04-18T17:56:00.775Z [error]: Error in sendChatCompletion Failed to parse JSON response: Unexpected token '`', "```json
+{
+"... is not valid JSON
+2025-04-18T17:56:36.992Z [info]: Received response from OpenRouter
+2025-04-18T17:56:36.992Z [error]: Error in sendChatCompletion Failed to parse JSON response: Unexpected end of JSON input
+2025-04-18T17:57:02.713Z [info]: OpenRouterService initialized with baseUrl=https://openrouter.ai/api/v1 model=deepseek/deepseek-chat-v3-0324:free
+2025-04-18T17:57:02.714Z [info]: Sending chat completion with 2 messages
+2025-04-18T17:57:18.629Z [info]: Received response from OpenRouter
+2025-04-18T17:57:21.052Z [info]: OpenRouterService initialized with baseUrl=https://openrouter.ai/api/v1 model=deepseek/deepseek-chat-v3-0324:free
+2025-04-18T17:57:21.053Z [info]: Sending chat completion with 2 messages
+2025-04-18T17:59:01.976Z [info]: Received response from OpenRouter
+2025-04-18T17:59:01.977Z [error]: Error in sendChatCompletion Failed to parse JSON response: Unexpected end of JSON input. Raw content: 
+2025-04-18T18:01:19.134Z [info]: OpenRouterService initialized with baseUrl=https://openrouter.ai/api/v1 model=deepseek/deepseek-chat-v3-0324:free
+2025-04-18T18:01:19.135Z [info]: Sending chat completion with 2 messages
+2025-04-18T18:03:00.549Z [info]: Received response from OpenRouter
+2025-04-18T18:03:00.549Z [info]: Assistant raw content: 
+2025-04-18T18:03:00.549Z [info]: Stripped content: 
+2025-04-18T18:03:00.550Z [error]: Error in sendChatCompletion: No valid JSON object found in content. Raw content: 
+2025-04-18T18:39:54.095Z [info]: OpenRouterService initialized with baseUrl=https://openrouter.ai/api/v1 model=deepseek/deepseek-chat-v3-0324:free
+2025-04-18T18:39:54.096Z [info]: Sending chat completion with 2 messages
+2025-04-18T18:40:11.717Z [info]: OpenRouterService initialized with baseUrl=https://openrouter.ai/api/v1 model=deepseek/deepseek-chat-v3-0324:free
+2025-04-18T18:40:11.717Z [info]: Sending chat completion with 2 messages
+2025-04-18T18:41:35.659Z [info]: Received response from OpenRouter
+2025-04-18T18:41:35.659Z [info]: Assistant raw content: 
+2025-04-18T18:41:35.659Z [info]: Stripped content: 
+2025-04-18T18:41:35.659Z [error]: Error in sendChatCompletion: No valid JSON object found in content. Raw content: 
+2025-04-18T18:41:53.111Z [info]: Received response from OpenRouter
+2025-04-18T18:41:53.111Z [info]: Assistant raw content: 
+2025-04-18T18:41:53.111Z [info]: Stripped content: 
+2025-04-18T18:41:53.112Z [error]: Error in sendChatCompletion: No valid JSON object found in content. Raw content: 
