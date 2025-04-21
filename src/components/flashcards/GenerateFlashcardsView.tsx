@@ -23,6 +23,7 @@ const GenerateFlashcardsView: React.FC = () => {
     isSaving,
     error: saveError,
     success: saveSuccess,
+    savedCount,
   } = useSaveFlashcards();
   const [localSuggestions, setLocalSuggestions] = useState<
     FlashcardSuggestion[]
@@ -53,9 +54,47 @@ const GenerateFlashcardsView: React.FC = () => {
     if (apiError) toast.error(apiError);
   }, [apiError]);
   useEffect(() => {
-    if (saveError) toast.error(saveError);
-    else if (saveSuccess) toast.success("Flashcards saved successfully.");
-  }, [saveError, saveSuccess]);
+    if (saveError) {
+      toast.error(`Failed to save flashcards: ${saveError}`);
+    } else if (saveSuccess && savedCount > 0) {
+      toast.success(
+        `Successfully saved ${savedCount} flashcard${
+          savedCount === 1 ? "" : "s"
+        }.`
+      );
+    }
+  }, [saveError, saveSuccess, savedCount]);
+  const handleSaveFlashcards = async () => {
+    if (!generationId) {
+      toast.error(
+        "No generation ID available. Please generate flashcards first."
+      );
+      return;
+    }
+
+    const selectedFlashcards = localSuggestions
+      .map((s, idx) => ({ suggestion: s, idx }))
+      .filter(({ idx }) => ["approved", "edited"].includes(statusMap[idx]));
+
+    if (selectedFlashcards.length === 0) {
+      toast.error("Please approve or edit at least one flashcard to save.");
+      return;
+    }
+
+    const flashcards = selectedFlashcards.map(({ suggestion: s }) => ({
+      front: s.front,
+      back: s.back,
+      source: s.source,
+      generation_id: generationId,
+    }));
+
+    const result = await save({ flashcards });
+
+    // If some flashcards failed to save, show detailed feedback
+    if (result?.failed?.length > 0 && result.data.length === 0) {
+      toast.error(`Failed to save flashcards: ${result.failed[0].error}`);
+    }
+  };
   return (
     <div className="space-y-4 p-6">
       <Toaster position="top-right" />
@@ -127,33 +166,20 @@ const GenerateFlashcardsView: React.FC = () => {
               disabled={
                 Object.values(statusMap).filter(
                   (st) => st === "approved" || st === "edited"
-                ).length === 0
+                ).length === 0 || isSaving
               }
               isLoading={isSaving}
-              onClick={() => {
-                if (!generationId) return;
-                const flashcards = localSuggestions
-                  .map((s, idx) => ({ suggestion: s, idx }))
-                  .filter(({ idx }) =>
-                    ["approved", "edited"].includes(statusMap[idx])
-                  )
-                  .map(({ suggestion: s }) => ({
-                    front: s.front,
-                    back: s.back,
-                    source: s.source,
-                    generation_id: generationId,
-                  }));
-                save({ flashcards });
-              }}
+              onClick={handleSaveFlashcards}
             />
             {saveError && (
               <div role="alert" className="text-destructive mt-2">
                 {saveError}
               </div>
             )}
-            {saveSuccess && (
+            {saveSuccess && savedCount > 0 && (
               <div role="status" className="text-green-600 mt-2">
-                Flashcards saved successfully.
+                Successfully saved {savedCount} flashcard
+                {savedCount === 1 ? "" : "s"}.
               </div>
             )}
           </div>

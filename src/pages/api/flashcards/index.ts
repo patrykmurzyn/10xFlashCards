@@ -7,82 +7,122 @@ import type { FlashcardDTO, PaginatedResponse } from "../../../types";
 import { DEFAULT_USER_ID } from "../../../db/supabase.client";
 import { createFlashcards } from "../../../lib/services/flashcard.service";
 import { createFlashcardsCommandSchema } from "../../../lib/schemas/flashcard.schema";
+import { z } from "zod";
 
 // Disable prerendering for this API route
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request, url, locals }) => {
-    // Extract the Supabase client from locals
-    const supabase = locals.supabase;
+// Schema for query parameters
+const QuerySchema = z.object({
+    page: z.coerce.number().positive().default(1),
+    limit: z.coerce.number().min(1).max(100).default(10),
+});
 
-    // For testing, use default user from supabase client
-    const userId = DEFAULT_USER_ID;
+export const GET: APIRoute = async ({ request, locals }) => {
+    try {
+        // Parse and validate query parameters
+        const url = new URL(request.url);
+        const searchParams = Object.fromEntries(url.searchParams.entries());
+        const { page, limit } = QuerySchema.parse(searchParams);
 
-    // Parse query parameters from the URL
-    const queryParams = Object.fromEntries(url.searchParams.entries());
-    const parseResult = paginationSchema.safeParse(queryParams);
-    if (!parseResult.success) {
+        // Get user from session
+        const { supabase, session } = locals;
+        if (!session?.user) {
+            return new Response(
+                JSON.stringify({ message: "Unauthorized" }),
+                {
+                    status: 401,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+        }
+
+        const userId = session.user.id;
+        const offset = (page - 1) * limit;
+
+        // Calculate total count of user's flashcards
+        const { count, error: countError } = await supabase
+            .from("flashcards")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId);
+
+        if (countError) {
+            console.error("Error counting flashcards:", countError);
+            return new Response(
+                JSON.stringify({ message: "Failed to count flashcards" }),
+                {
+                    status: 500,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+        }
+
+        // Fetch paginated flashcards
+        const { data, error } = await supabase
+            .from("flashcards")
+            .select(
+                "id, front, back, source, generation_id, created_at, updated_at",
+            )
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .range(offset, offset + limit - 1);
+
+        if (error) {
+            console.error("Error fetching flashcards:", error);
+            return new Response(
+                JSON.stringify({ message: "Failed to fetch flashcards" }),
+                {
+                    status: 500,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+        }
+
+        // Prepare paginated response
+        const response: PaginatedResponse<FlashcardDTO> = {
+            data: data,
+            pagination: {
+                page,
+                limit,
+                total: count || 0,
+            },
+        };
+
+        return new Response(
+            JSON.stringify(response),
+            { headers: { "Content-Type": "application/json" } },
+        );
+    } catch (error) {
+        console.error("API error:", error);
         return new Response(
             JSON.stringify({
-                error: "Invalid query parameters",
-                details: parseResult.error.flatten(),
+                message: error instanceof Error
+                    ? error.message
+                    : "Internal server error",
             }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            },
+            { status: 500, headers: { "Content-Type": "application/json" } },
         );
     }
-
-    // Use the helper function to parse pagination parameters
-    const { page, limit, sortBy, order, offset } = parsePaginationParams(
-        parseResult.data,
-    );
-
-    // Query the flashcards for the authenticated user with pagination and sorting
-    const { data, error, count } = await supabase
-        .from("flashcards")
-        .select("*", { count: "exact" })
-        .eq("user_id", userId)
-        .order(sortBy, { ascending: order === "asc" })
-        .range(offset, offset + limit - 1);
-
-    if (error) {
-        return new Response(
-            JSON.stringify({ error: "Database error", details: error.message }),
-            {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
-    }
-
-    // Transform flashcards to FlashcardDTO by omitting the user_id field
-    const flashcardsDTO: FlashcardDTO[] = (data || []).map((flashcard: any) => {
-        const { user_id, ...rest } = flashcard;
-        return rest;
-    });
-
-    const responseBody: PaginatedResponse<FlashcardDTO> = {
-        data: flashcardsDTO,
-        pagination: {
-            page,
-            limit,
-            total: count || 0,
-        },
-    };
-
-    return new Response(JSON.stringify(responseBody), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-    });
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-    // Extract the Supabase client from locals
-    const supabase = locals.supabase;
+    // Extract the Supabase client and session from locals
+    const { supabase, session } = locals;
 
     try {
+        // Check if user is authenticated
+        if (!session?.user) {
+            return new Response(
+                JSON.stringify({ error: "Unauthorized" }),
+                {
+                    status: 401,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+        }
+
+        const userId = session.user.id;
+
         // Parse and validate request body
         const requestData = await request.json();
         const validationResult = createFlashcardsCommandSchema.safeParse(
@@ -106,15 +146,29 @@ export const POST: APIRoute = async ({ request, locals }) => {
             );
         }
 
-        // For testing, use default user from supabase client
-        const userId = DEFAULT_USER_ID;
-
-        // Call the service to create the flashcards
+        // Call the service to create the flashcards with the authenticated user's ID
         const result = await createFlashcards(
             supabase,
             validationResult.data.flashcards,
             userId,
         );
+
+        // Check if any flashcards were actually created
+        if (result.data.length === 0) {
+            // If all flashcards failed to save
+            return new Response(
+                JSON.stringify({
+                    error: "Failed to save flashcards",
+                    details: result.failed,
+                }),
+                {
+                    status: 422,
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                },
+            );
+        }
 
         // Return successful response with 201 Created status
         return new Response(JSON.stringify(result), {

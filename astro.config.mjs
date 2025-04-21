@@ -10,5 +10,24 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      rollupOptions: {
+        external: [
+          "@testing-library/dom",
+          "@testing-library/user-event",
+          "@testing-library/react",
+        ],
+      },
+    },
+    ssr: {
+      noExternal: ["@radix-ui/*"],
+    },
+    optimizeDeps: {
+      exclude: [
+        "@testing-library/dom",
+        "@testing-library/user-event",
+        "@testing-library/react",
+      ],
+    },
   },
 });

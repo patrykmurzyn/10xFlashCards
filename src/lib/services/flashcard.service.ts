@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "../../db/supabase.client";
-import { DEFAULT_USER_ID } from "../../db/supabase.client";
 import type {
     CreateFlashcardDTO,
     FlashcardDTO,
@@ -13,13 +12,17 @@ import type {
  *
  * @param supabase - The Supabase client instance from context.locals.
  * @param id - The flashcard ID to delete.
- * @param userId - The user id owning the flashcard (defaults to DEFAULT_USER_ID).
+ * @param userId - The user id owning the flashcard.
  */
 export async function deleteFlashcard(
     supabase: SupabaseClient,
     id: string,
-    userId: string = DEFAULT_USER_ID,
+    userId: string,
 ): Promise<void> {
+    if (!userId) {
+        throw new Error("User ID is required to delete a flashcard");
+    }
+
     const { data, error } = await supabase
         .from("flashcards")
         .delete()
@@ -44,14 +47,18 @@ export async function deleteFlashcard(
  *
  * @param supabase - The Supabase client instance from context.locals.
  * @param id - The flashcard ID to retrieve.
- * @param userId - The user id owning the flashcard (defaults to DEFAULT_USER_ID).
+ * @param userId - The user id owning the flashcard.
  * @returns The flashcard as a FlashcardDTO.
  */
 export async function getFlashcard(
     supabase: SupabaseClient,
     id: string,
-    userId: string = DEFAULT_USER_ID,
+    userId: string,
 ): Promise<FlashcardDTO> {
+    if (!userId) {
+        throw new Error("User ID is required to retrieve a flashcard");
+    }
+
     const { data, error } = await supabase
         .from("flashcards")
         .select("*")
@@ -89,14 +96,19 @@ export interface CreateFlashcardsResult {
  *
  * @param supabase - The Supabase client instance from context.locals.
  * @param flashcards - Array of flashcard data to create.
- * @param userId - The user id who owns the flashcards (defaults to DEFAULT_USER_ID).
+ * @param userId - The user id who owns the flashcards.
  * @returns Object containing successful creations and failures.
  */
 export async function createFlashcards(
     supabase: SupabaseClient,
     flashcards: CreateFlashcardDTO[],
-    userId: string = DEFAULT_USER_ID,
+    userId: string,
 ): Promise<CreateFlashcardsResult> {
+    // Validate userId
+    if (!userId) {
+        throw new Error("User ID is required to create flashcards");
+    }
+
     const result: CreateFlashcardsResult = {
         data: [],
         failed: [],
@@ -162,15 +174,19 @@ export async function createFlashcards(
  * @param supabase - The Supabase client instance from context.locals.
  * @param id - The flashcard ID to update.
  * @param updateData - The data to update on the flashcard.
- * @param userId - The user id owning the flashcard (defaults to DEFAULT_USER_ID).
+ * @param userId - The user id owning the flashcard.
  * @returns The updated flashcard as a FlashcardDTO.
  */
 export async function updateFlashcard(
     supabase: SupabaseClient,
     id: string,
     updateData: UpdateFlashcardCommand,
-    userId: string = DEFAULT_USER_ID,
+    userId: string,
 ): Promise<FlashcardDTO> {
+    if (!userId) {
+        throw new Error("User ID is required to update a flashcard");
+    }
+
     // First check if the flashcard exists for this user
     const checkResult = await supabase
         .from("flashcards")
@@ -207,4 +223,23 @@ export async function updateFlashcard(
     // Transform to FlashcardDTO by omitting the user_id field
     const { user_id, ...flashcardDTO } = data;
     return flashcardDTO;
+}
+
+/**
+ * Helper function to get current user ID or throw an error
+ */
+export async function getCurrentUserId(
+    supabase: SupabaseClient,
+): Promise<string> {
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error) {
+        throw new Error(`Authentication error: ${error.message}`);
+    }
+
+    if (!user || !user.id) {
+        throw new Error("No authenticated user found");
+    }
+
+    return user.id;
 }

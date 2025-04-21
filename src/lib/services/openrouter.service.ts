@@ -27,6 +27,7 @@ export class OpenRouterError extends Error {
 export class OpenRouterService {
     private apiKey: string;
     private apiBaseUrl: string = "https://openrouter.ai/api/v1"; // Default OpenRouter base URL
+    private defaultMaxTokens: number = 4096; // Set a higher default max_tokens
 
     constructor() {
         // Load API Key from environment variables
@@ -67,39 +68,62 @@ export class OpenRouterService {
         responseSchema?: T;
         schemaName?: string;
         temperature?: number;
-        max_tokens?: number;
+        max_tokens?: number; // Allow overriding default
         // Add other valid OpenRouter parameters as needed
     }): Promise<string | z.infer<T>> {
-        const payload = this._preparePayload(options);
-        const response = await this._callApi("/chat/completions", payload);
-        return this._parseResponse(response, options.responseSchema);
-    }
-
-    private _createResponseFormat(
-        schema: z.ZodTypeAny,
-        name: string,
-    ): ResponseFormat {
         try {
-            // Convert Zod schema to JSON schema object
-            // The 'name' parameter in zodToJsonSchema might not be directly used by OpenRouter's format,
-            // but it's part of the library's API. We use the provided 'name' for OpenRouter's schema name field.
-            const jsonSchema = zodToJsonSchema(schema, name);
+            // Use provided max_tokens or the higher default
+            const maxTokens = options.max_tokens ?? this.defaultMaxTokens;
+            const optionsWithDefaults = { ...options, max_tokens: maxTokens };
 
-            return {
-                type: "json_schema",
-                json_schema: {
-                    name: name, // Name required by OpenRouter
-                    strict: true, // Enforce schema adherence
-                    schema: jsonSchema, // The generated JSON schema structure
-                },
-            };
-        } catch (error) {
-            console.error(
-                "Failed to convert Zod schema to JSON schema:",
-                error,
+            // When using structured outputs, add a system message hint about the expected format if one doesn't exist
+            if (
+                optionsWithDefaults.responseSchema &&
+                !optionsWithDefaults.messages.some((msg) =>
+                    msg.role === "system"
+                )
+            ) {
+                // Add a system message that explicitly tells the model to return raw JSON
+                optionsWithDefaults.messages.unshift({
+                    role: "system",
+                    content:
+                        "Return ONLY the raw JSON response conforming to the specified schema with no markdown formatting, code blocks, or additional text.",
+                });
+                console.log("Added system message to ensure raw JSON response");
+            }
+
+            const payload = this._preparePayload(optionsWithDefaults);
+            console.log(
+                `Sending request to OpenRouter model: ${optionsWithDefaults.model} with max_tokens: ${optionsWithDefaults.max_tokens}`,
             );
+
+            // If using schema, log relevant information
+            if (
+                optionsWithDefaults.responseSchema &&
+                optionsWithDefaults.schemaName
+            ) {
+                console.log(
+                    `Using schema: ${optionsWithDefaults.schemaName} for structured output`,
+                );
+            }
+
+            const response = await this._callApi(
+                "/chat/completions",
+                payload,
+            );
+            return this._parseResponse(
+                response,
+                optionsWithDefaults.responseSchema,
+            );
+        } catch (error) {
+            console.error("Error in OpenRouter chatCompletion:", error);
+            if (error instanceof OpenRouterError) {
+                throw error;
+            }
             throw new OpenRouterError(
-                "Invalid response schema provided.",
+                `Failed to get response from OpenRouter: ${
+                    (error as Error).message
+                }`,
                 error,
             );
         }
@@ -121,9 +145,24 @@ export class OpenRouterService {
                     "schemaName is required when responseSchema is provided.",
                 );
             }
-            payload.response_format = this._createResponseFormat(
-                responseSchema,
-                schemaName,
+
+            // Ensure we're setting up the response_format correctly according to OpenRouter docs
+            // Using the exact format from their documentation
+            const jsonSchema = zodToJsonSchema(responseSchema, schemaName);
+
+            payload.response_format = {
+                type: "json_schema",
+                json_schema: {
+                    name: schemaName,
+                    strict: true,
+                    schema: jsonSchema,
+                },
+            };
+
+            // Log the schema being sent for debugging
+            console.log(
+                "Using schema for structured output:",
+                JSON.stringify(payload.response_format, null, 2),
             );
         }
 
@@ -208,76 +247,140 @@ export class OpenRouterService {
         console.log("---------------------------------------");
 
         if (schema) {
+            let parsedJson: any;
             try {
-                let parsedJson = JSON.parse(messageContent);
+                // First, handle the case where the response is wrapped in markdown code blocks
+                let contentToParse = messageContent.trim(); // Trim whitespace from the raw message
+                let extracted = false;
 
-                // Sprawdź, czy parsedJson jest ciągiem znaków, który wygląda jak JSON (zaczyna się od [ lub {)
-                if (
-                    typeof parsedJson === "string" &&
-                    (parsedJson.trim().startsWith("[") ||
-                        parsedJson.trim().startsWith("{"))
-                ) {
+                // Refined regex: Anchored, flexible whitespace, greedy capture
+                const codeBlockMatch = contentToParse.match(
+                    /^```(?:json)?\s*([\s\S]*?)\s*```$/,
+                );
+
+                if (codeBlockMatch && codeBlockMatch[1]) {
+                    contentToParse = codeBlockMatch[1].trim(); // Trim the extracted content specifically
+                    extracted = true;
                     console.log(
-                        "Wykryto JSON string wewnątrz odpowiedzi - parsowanie drugi raz",
+                        "Extracted content from code block:",
+                        contentToParse,
                     );
-                    try {
-                        // Spróbuj sparsować jeszcze raz - model może zwrócić string zawierający JSON
-                        parsedJson = JSON.parse(parsedJson);
-                    } catch (innerError) {
-                        console.error(
-                            "Nie udało się sparsować wewnętrznego JSON:",
-                            innerError,
-                        );
-                        // Kontynuuj z oryginalnym parsedJson jeśli drugi parsing nie zadziała
-                    }
+                } else {
+                    // If it wasn't a code block, keep the trimmed original messageContent
+                    console.log(
+                        "No code block detected or regex failed. Attempting to parse trimmed original content.",
+                    );
                 }
 
-                // Dodaj check: Jeśli schema oczekuje tablicy/obiektu, ale parsedJson jest null lub nie jest obiektem
-                if (parsedJson === null || typeof parsedJson !== "object") {
-                    // Sprawdź czy schema oczekuje null, w przeciwnym wypadku to błąd
-                    const expectedType = schema._def.typeName;
-                    if (expectedType !== "ZodNull") {
-                        console.error(
-                            `Parsed JSON is ${
-                                parsedJson === null ? "null" : typeof parsedJson
-                            }, but schema expected ${expectedType}. Content:`,
-                            messageContent,
+                // Check if the potentially extracted content is empty
+                if (!contentToParse) {
+                    throw new OpenRouterError(
+                        "After processing, the content to parse is empty.",
+                    );
+                }
+
+                // Log the exact content being parsed, escaping control characters for visibility
+                console.log(
+                    "Attempting to parse content:",
+                    JSON.stringify(contentToParse),
+                );
+
+                // --- Attempt to parse the cleaned content ---
+                try {
+                    parsedJson = JSON.parse(contentToParse);
+                } catch (parseError) {
+                    console.error("Initial parsing failed:", parseError);
+                    // If extraction happened but failed, maybe the original message was actually valid JSON?
+                    if (extracted) {
+                        console.warn(
+                            "Parsing extracted content failed. Retrying with original trimmed message content.",
                         );
+                        try {
+                            const originalTrimmedContent = messageContent
+                                .trim();
+                            console.log(
+                                "Retrying parse with original trimmed content:",
+                                JSON.stringify(originalTrimmedContent),
+                            );
+                            parsedJson = JSON.parse(originalTrimmedContent);
+                        } catch (retryParseError) {
+                            console.error(
+                                "Retry parsing with original content also failed:",
+                                retryParseError,
+                            );
+                            // Throw the original error if retry also fails, including original content
+                            throw new OpenRouterError(
+                                `Failed to parse AI response content as JSON, even after attempting to handle code blocks. Original Content: ${messageContent}`,
+                                parseError, // Keep the first error as the primary cause
+                            );
+                        }
+                    } else {
+                        // If extraction didn't happen and parsing failed, throw the original error
                         throw new OpenRouterError(
-                            `AI response content could not be parsed into the expected structure (${expectedType}).`,
+                            `Failed to parse AI response content as JSON. Content: ${messageContent}`,
+                            parseError,
                         );
                     }
                 }
 
-                // Validate the parsed JSON against the Zod schema
+                // Add check for null response and log it
+                if (parsedJson === null) {
+                    console.warn(
+                        "OpenRouter returned null content. Attempting to proceed with validation.",
+                    );
+                }
+
+                // Validate the final parsed JSON against the Zod schema
                 const validationResult = schema.safeParse(parsedJson);
                 if (!validationResult.success) {
                     console.error(
                         "OpenRouter response failed schema validation:",
-                        validationResult.error,
+                        validationResult.error.flatten(), // Use flatten for better readability
+                        "Parsed JSON:",
+                        parsedJson, // Log the JSON that failed validation
                     );
                     // Include the problematic content in the error for easier debugging
                     throw new OpenRouterError(
-                        `Response failed schema validation. Content: ${messageContent}`,
+                        `Response failed schema validation. Parsed Content: ${
+                            JSON.stringify(parsedJson)
+                        }`,
                         validationResult.error,
                     );
                 }
-                return validationResult.data; // Return validated data
+                // Return validated data
+                return validationResult.data;
             } catch (error) {
-                if (error instanceof OpenRouterError) throw error; // Re-throw validation error
+                if (error instanceof OpenRouterError) throw error; // Re-throw specific errors
+
+                // Handle general JSON parsing errors (e.g., from the first parse)
+                if (error instanceof SyntaxError) {
+                    console.error(
+                        "Failed to parse initial JSON response content:",
+                        error,
+                        "Content:",
+                        messageContent,
+                    );
+                    throw new OpenRouterError(
+                        `Failed to parse AI response content as JSON. Content: ${messageContent}`,
+                        error,
+                    );
+                }
+
+                // Handle other unexpected errors during parsing/validation
                 console.error(
-                    "Failed to parse or validate structured response content:",
+                    "Unexpected error during response processing:",
                     error,
                     "Content:",
                     messageContent,
                 );
                 throw new OpenRouterError(
-                    `Failed to parse response content as expected JSON. Content: ${messageContent}`,
+                    `An unexpected error occurred while processing the AI response. Content: ${messageContent}`,
                     error,
                 );
             }
         } else {
-            return messageContent; // Return plain string content
+            // Return plain string content if no schema is provided
+            return messageContent;
         }
     }
 }

@@ -1,0 +1,10 @@
+---
+import ProtectedLayout from '../../layouts/ProtectedLayout.astro';
+import FlashcardsListView from '@/components/flashcards/FlashcardsListView';
+
+export const prerender = false;
+---
+
+<ProtectedLayout title="My Flashcards">
+  <FlashcardsListView client:load />
+</ProtectedLayout> 

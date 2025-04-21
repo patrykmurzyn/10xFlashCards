@@ -22,6 +22,14 @@
 
 - Deepseek r1/v3 via Openrouter.ai API
 
+**Testing:**
+
+- Jest and React Testing Library (Unit/Component Testing)
+- Cypress (End-to-End Testing)
+- Playwright (Accessibility Testing)
+- Lighthouse (Performance Testing)
+- Axe (Accessibility Compliance)
+
 **CI/CD & Hosting:**
 
 - GitHub Actions

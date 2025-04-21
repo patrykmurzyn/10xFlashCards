@@ -8,8 +8,16 @@ import {
 import { uuidSchema } from "../../../lib/schemas/uuid.schema";
 import { updateFlashcardSchema } from "../../../lib/schemas/flashcard.schema";
 import type { FlashcardDTO } from "../../../types";
+import { z } from "zod";
 
 export const prerender = false;
+
+// Schema for update request body
+const UpdateFlashcardSchema = z.object({
+    front: z.string().min(1).optional(),
+    back: z.string().min(1).optional(),
+    source: z.enum(["manual", "AI-full", "AI-edited"]).optional(),
+});
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
     const { id } = params;
@@ -63,130 +71,106 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
 };
 
 export const GET: APIRoute = async ({ params, locals }) => {
-    // Extract the Supabase client from locals
-    const supabase = locals.supabase;
-
-    // Extract the ID parameter from the URL
-    const { id } = params;
-
-    // Check if ID exists
-    if (!id) {
-        return new Response(
-            JSON.stringify({ error: "Flashcard ID is required" }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
-    }
-
-    // Validate the ID parameter
-    const parseResult = uuidSchema.safeParse(id);
-    if (!parseResult.success) {
-        return new Response(
-            JSON.stringify({
-                error: "Invalid ID format",
-                details: parseResult.error.flatten(),
-            }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
-    }
-
     try {
-        // Call the flashcard service to retrieve the flashcard
-        const flashcardDTO = await getFlashcard(supabase, id);
-
-        return new Response(JSON.stringify(flashcardDTO), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
-    } catch (error: any) {
-        console.error("Error retrieving flashcard:", error);
-
-        if (error.message === "Flashcard not found") {
+        // Check if id is provided
+        const { id } = params;
+        if (!id) {
             return new Response(
-                JSON.stringify({ error: error.message }),
+                JSON.stringify({ message: "Flashcard ID is required" }),
                 {
-                    status: 404,
+                    status: 400,
                     headers: { "Content-Type": "application/json" },
                 },
             );
         }
 
-        if (error.message.startsWith("Database error:")) {
+        // Get user from session
+        const { supabase, session } = locals;
+        if (!session?.user) {
             return new Response(
-                JSON.stringify({
-                    error: "Database error",
-                    details: error.message.replace("Database error: ", ""),
-                }),
+                JSON.stringify({ message: "Unauthorized" }),
                 {
-                    status: 500,
+                    status: 401,
                     headers: { "Content-Type": "application/json" },
                 },
             );
         }
 
+        const userId = session.user.id;
+
+        // Fetch the flashcard
+        try {
+            const flashcard = await getFlashcard(supabase, id, userId);
+            return new Response(
+                JSON.stringify(flashcard),
+                { headers: { "Content-Type": "application/json" } },
+            );
+        } catch (error) {
+            if (
+                error instanceof Error &&
+                error.message === "Flashcard not found"
+            ) {
+                return new Response(
+                    JSON.stringify({ message: "Flashcard not found" }),
+                    {
+                        status: 404,
+                        headers: { "Content-Type": "application/json" },
+                    },
+                );
+            }
+            throw error;
+        }
+    } catch (error) {
+        console.error("API error:", error);
         return new Response(
             JSON.stringify({
-                error: "Internal Server Error",
-                message: error.message || "An unexpected error occurred",
+                message: error instanceof Error
+                    ? error.message
+                    : "Internal server error",
             }),
-            {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            },
+            { status: 500, headers: { "Content-Type": "application/json" } },
         );
     }
 };
 
-export const PUT: APIRoute = async ({ params, request, locals }) => {
-    // Extract the Supabase client from locals
-    const supabase = locals.supabase;
-
-    // Extract the ID parameter from the URL
-    const { id } = params;
-
-    // Check if ID exists
-    if (!id) {
-        return new Response(
-            JSON.stringify({ error: "Flashcard ID is required" }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
-    }
-
-    // Validate the ID parameter
-    const idParseResult = uuidSchema.safeParse(id);
-    if (!idParseResult.success) {
-        return new Response(
-            JSON.stringify({
-                error: "Invalid ID format",
-                details: idParseResult.error.flatten(),
-            }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
-    }
-
+export const PATCH: APIRoute = async ({ request, params, locals }) => {
     try {
-        // Parse and validate request body
-        const requestData = await request.json();
-        const validationResult = updateFlashcardSchema.safeParse(requestData);
+        // Check if id is provided
+        const { id } = params;
+        if (!id) {
+            return new Response(
+                JSON.stringify({ message: "Flashcard ID is required" }),
+                {
+                    status: 400,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+        }
 
-        if (!validationResult.success) {
-            // Handle validation errors
-            const errors = validationResult.error.flatten();
+        // Get user from session
+        const { supabase, session } = locals;
+        if (!session?.user) {
+            return new Response(
+                JSON.stringify({ message: "Unauthorized" }),
+                {
+                    status: 401,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+        }
+
+        const userId = session.user.id;
+
+        // Parse and validate request body
+        let updateData;
+        try {
+            const body = await request.json();
+            updateData = UpdateFlashcardSchema.parse(body);
+        } catch (error) {
             return new Response(
                 JSON.stringify({
-                    error: "Validation Error",
-                    details: errors,
+                    message: "Invalid request body",
+                    details: error instanceof Error ? error.message : undefined,
                 }),
                 {
                     status: 400,
@@ -195,54 +179,42 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
             );
         }
 
-        // Call the service to update the flashcard
-        const updatedFlashcard = await updateFlashcard(
-            supabase,
-            id,
-            validationResult.data,
-        );
-
-        // Return the updated flashcard
-        return new Response(JSON.stringify(updatedFlashcard), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
-    } catch (error: any) {
-        console.error("Error updating flashcard:", error);
-
-        if (error.message === "Flashcard not found") {
-            return new Response(
-                JSON.stringify({ error: error.message }),
-                {
-                    status: 404,
-                    headers: { "Content-Type": "application/json" },
-                },
+        // Update the flashcard
+        try {
+            const updatedFlashcard = await updateFlashcard(
+                supabase,
+                id,
+                updateData,
+                userId,
             );
-        }
-
-        if (error.message.startsWith("Database error:")) {
             return new Response(
-                JSON.stringify({
-                    error: "Database error",
-                    details: error.message.replace("Database error: ", ""),
-                }),
-                {
-                    status: 500,
-                    headers: { "Content-Type": "application/json" },
-                },
+                JSON.stringify(updatedFlashcard),
+                { headers: { "Content-Type": "application/json" } },
             );
+        } catch (error) {
+            if (
+                error instanceof Error &&
+                error.message === "Flashcard not found"
+            ) {
+                return new Response(
+                    JSON.stringify({ message: "Flashcard not found" }),
+                    {
+                        status: 404,
+                        headers: { "Content-Type": "application/json" },
+                    },
+                );
+            }
+            throw error;
         }
-
-        // Handle other errors
+    } catch (error) {
+        console.error("API error:", error);
         return new Response(
             JSON.stringify({
-                error: "Internal Server Error",
-                message: error.message || "An unexpected error occurred",
+                message: error instanceof Error
+                    ? error.message
+                    : "Internal server error",
             }),
-            {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            },
+            { status: 500, headers: { "Content-Type": "application/json" } },
         );
     }
 };

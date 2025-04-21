@@ -15,6 +15,15 @@
 
 # AI - Deepseek r1/v3 via Openrouter.ai API
 
+# Testing:
+
+- Jest and React Testing Library for unit/component testing
+- Cypress for end-to-end testing
+- Playwright for accessibility testing
+- Lighthouse for performance testing
+- Postman/Thunder Client for API testing
+- Axe for accessibility compliance
+
 # CI/CD and Hosting:
 
 - GitHub Actions for creating CI/CD pipelines
