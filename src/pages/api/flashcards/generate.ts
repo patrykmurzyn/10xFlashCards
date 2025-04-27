@@ -55,7 +55,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             );
         }
 
-        const { source_text } = validationResult.data;
+        const { source_text, num_cards } = validationResult.data;
         sourceTextForErrorLog = source_text; // Store for potential error logging
 
         // Start timing the generation process
@@ -64,6 +64,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // Call the flashcard generation service
         const result = await generateFlashcards({
             sourceText: source_text,
+            numCards: num_cards,
         });
 
         // Check if result contains suggestions

@@ -11,9 +11,9 @@ export const createFlashcardSchema = z.object({
         .string()
         .min(1, "Back text is required")
         .max(500, "Back text must not exceed 500 characters"),
-    source: z.enum(["manual", "AI-full", "AI-edited"], {
+    source: z.enum(["manual", "ai-full", "ai-edited"], {
         errorMap: () => ({
-            message: "Source must be one of: manual, AI-full, AI-edited",
+            message: "Source must be one of: manual, ai-full, ai-edited",
         }),
     }),
     generation_id: z.union([uuidSchema, z.null()]),
@@ -52,9 +52,9 @@ export const updateFlashcardSchema = z.object({
         .string()
         .min(1, "Back text is required")
         .max(500, "Back text must not exceed 500 characters"),
-    source: z.enum(["manual", "AI-edited"], {
+    source: z.enum(["manual", "ai-edited"], {
         errorMap: () => ({
-            message: "Source must be one of: manual, AI-edited",
+            message: "Source must be one of: manual, ai-edited",
         }),
     }),
 });

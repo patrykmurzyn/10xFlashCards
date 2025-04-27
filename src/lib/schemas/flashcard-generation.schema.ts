@@ -6,6 +6,13 @@ export const generateFlashcardsSchema = z.object({
         .string()
         .min(1000, "Text must be at least 1000 characters long")
         .max(10000, "Text must not exceed 10000 characters"),
+    num_cards: z
+        .number()
+        .int()
+        .min(1, "Must generate at least 1 flashcard")
+        .max(50, "Cannot generate more than 50 flashcards at once")
+        .optional()
+        .default(10),
 });
 
 // Type inference from the schema

@@ -5,6 +5,11 @@ import type {
     GenerateFlashcardsCommand,
 } from "@/types";
 
+interface GenerateOptions {
+    sourceText: string;
+    numCards?: number;
+}
+
 export function useGenerateFlashcards() {
     const [isLoading, setIsLoading] = useState(false);
     const [suggestions, setSuggestions] = useState<FlashcardSuggestion[]>([]);
@@ -12,12 +17,13 @@ export function useGenerateFlashcards() {
     const [model, setModel] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    async function generate(sourceText: string) {
+    async function generate(sourceText: string, numCards?: number) {
         setIsLoading(true);
         setError(null);
         try {
             const payload: GenerateFlashcardsCommand = {
                 source_text: sourceText,
+                num_cards: numCards,
             };
             const res = await fetch("/api/flashcards/generate", {
                 method: "POST",

@@ -5,7 +5,7 @@ import NavigationMenu from '../components/ui/NavigationMenu';
 
 <Layout>
   <script type="module">
-    import { supabaseClient } from '../db/supabase.client';
+    import { supabaseClient } from '@/db/supabase.client';
     (async () => {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) window.location.href = '/login';

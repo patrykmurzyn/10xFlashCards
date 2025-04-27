@@ -32,3 +32,5 @@ supabase/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+.env.test

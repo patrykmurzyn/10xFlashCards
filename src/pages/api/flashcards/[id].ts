@@ -16,7 +16,11 @@ export const prerender = false;
 const UpdateFlashcardSchema = z.object({
     front: z.string().min(1).optional(),
     back: z.string().min(1).optional(),
-    source: z.enum(["manual", "AI-full", "AI-edited"]).optional(),
+    source: z.enum(["manual", "ai-full", "ai-edited"], {
+        errorMap: () => ({
+            message: "Source must be one of: manual, ai-full, ai-edited",
+        }),
+    }).optional(),
 });
 
 export const DELETE: APIRoute = async ({ params, locals }) => {

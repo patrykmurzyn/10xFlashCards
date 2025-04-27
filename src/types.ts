@@ -17,7 +17,7 @@ export type GenerationErrorLog =
 /**
  * Enum for flashcard source values.
  */
-export type FlashcardSource = "manual" | "AI-full" | "AI-edited";
+export type FlashcardSource = "manual" | "ai-full" | "ai-edited";
 
 /**
  * DTO for Flashcard responses.
@@ -55,16 +55,17 @@ export type UpdateFlashcardCommand = Pick<
  */
 export interface GenerateFlashcardsCommand {
     source_text: string;
+    num_cards?: number;
 }
 
 /**
  * DTO for a generated flashcard suggestion.
- * In generation responses, the 'source' field is always set to 'AI-full'.
+ * In generation responses, the 'source' field is always set to 'ai-full'.
  */
 export interface FlashcardSuggestion {
     front: string;
     back: string;
-    source: "AI-full";
+    source: "ai-full";
 }
 
 /**

@@ -7,8 +7,8 @@ import type {
     GeneratedFlashcardsDTO,
 } from "../../types";
 import { type SupabaseClient } from "../../db/supabase.client";
-import { OpenRouterError, OpenRouterService } from "./openrouter.service";
 import { getCurrentUserId } from "./flashcard.service";
+import OpenAI from "openai";
 
 const FlashcardSchema = z.object({
     front: z.string().describe("The flashcard question"),
@@ -20,20 +20,46 @@ const FlashcardListSchema = z.array(FlashcardSchema).nullish().transform(
 
 interface GenerateFlashcardsOptions {
     sourceText: string;
+    numCards?: number;
 }
 
 /**
- * Generates flashcard suggestions from provided text using OpenRouterService
+ * Returns an instance of the OpenAI client configured to use OpenRouter
+ */
+function getOpenAIClient() {
+    const apiKey = import.meta.env.OPENROUTER_API_KEY;
+    if (!apiKey || typeof apiKey !== "string") {
+        throw new Error(
+            "OpenRouter API key is missing or invalid. Please set OPENROUTER_API_KEY environment variable.",
+        );
+    }
+
+    return new OpenAI({
+        apiKey: apiKey,
+        baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: {
+            "HTTP-Referer": import.meta.env.PUBLIC_SITE_URL ||
+                "https://10xflashcards.com",
+            "X-Title": "10xFlashCards Application",
+            "Content-Type": "application/json",
+        },
+    });
+}
+
+/**
+ * Generates flashcard suggestions from provided text using OpenAI with OpenRouter
  */
 export async function generateFlashcards({
     sourceText,
+    numCards = 10,
 }: GenerateFlashcardsOptions): Promise<GeneratedFlashcardsDTO> {
-    const openRouterService = new OpenRouterService();
+    const openai = getOpenAIClient();
+    const modelName = "google/gemini-2.0-flash-exp:free";
 
     const systemPrompt = `
-Your task is to create 10 flashcards from the text provided by the user.
+Your task is to create ${numCards} flashcards from the text provided by the user.
 
-IMPORTANT: You must return a valid JSON array containing exactly 10 flashcard objects with the following structure:
+IMPORTANT: You must return a valid JSON array containing exactly ${numCards} flashcard objects with the following structure:
 [
   {
     "front": "Question text goes here?",
@@ -43,56 +69,76 @@ IMPORTANT: You must return a valid JSON array containing exactly 10 flashcard ob
 ]
 
 Guidelines:
-- Create exactly 10 flashcards
+- Create exactly ${numCards} flashcards
 - Focus on the most important concepts from the text
 - Write questions on the 'front' and answers on the 'back'
 - Keep both front and back concise but informative
 - Ensure your response is a valid JSON array that can be parsed
 - Do not include any text outside the JSON array
+- DO NOT wrap your response in markdown code blocks or quotes - return ONLY the raw JSON
 
 REMEMBER: Your entire response must be a valid JSON array that can be parsed with JSON.parse().
 `;
 
-    const userPrompt = sourceText;
-    const modelName = "google/gemma-3-27b-it:free";
-
     try {
-        const flashcardsResult = await openRouterService.chatCompletion({
+        const response = await openai.chat.completions.create({
             model: modelName,
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt },
+                { role: "user", content: sourceText },
             ],
-            responseSchema: FlashcardListSchema,
-            schemaName: "flashcard_list_generator",
             temperature: 0.5,
         });
 
-        // Check if result is an array (should be, due to schema transform)
-        if (!Array.isArray(flashcardsResult)) {
-            console.error(
-                "OpenRouter response was not the expected array format:",
-                flashcardsResult,
-            );
-            throw new Error(
-                "AI service returned an unexpected response format.",
-            );
+        // Extract content from the response
+        const content = response.choices[0]?.message?.content;
+        if (!content) {
+            throw new Error("AI service returned an empty response.");
         }
 
+        // Ensure we have a valid JSON response by parsing and handling potential errors
+        let flashcardsResult;
+        try {
+            // Try to parse the raw JSON
+            flashcardsResult = JSON.parse(content);
+        } catch (error) {
+            console.error("Error parsing JSON response:", content);
+            // Try to extract JSON from the content (in case there's extra text)
+            const jsonMatch = content.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                try {
+                    flashcardsResult = JSON.parse(jsonMatch[0]);
+                } catch (innerError) {
+                    console.error(
+                        "Failed to extract valid JSON from partial match:",
+                        jsonMatch[0],
+                    );
+                    throw new Error(
+                        "AI service returned an invalid JSON format.",
+                    );
+                }
+            } else {
+                throw new Error("AI service returned an invalid JSON format.");
+            }
+        }
+
+        // Validate the JSON against our Zod schema
+        const validatedFlashcards = FlashcardListSchema.parse(flashcardsResult);
+
         // Check if array is empty
-        if (flashcardsResult.length === 0) {
+        if (validatedFlashcards.length === 0) {
             console.warn("AI service returned an empty array of flashcards.");
             throw new Error(
                 "No flashcard suggestions could be generated from the provided text. Please try again with different content.",
             );
         }
 
-        const suggestions: FlashcardSuggestion[] = flashcardsResult.map((
+        const suggestions: FlashcardSuggestion[] = validatedFlashcards.map((
             card,
         ): FlashcardSuggestion => ({
             front: card.front,
             back: card.back,
-            source: "AI-full",
+            source: "ai-full",
         }));
 
         return {
@@ -102,15 +148,13 @@ REMEMBER: Your entire response must be a valid JSON array that can be parsed wit
             generated_count: suggestions.length,
         };
     } catch (error) {
-        console.error("Error generating flashcards via OpenRouter:", error);
-        if (error instanceof OpenRouterError) {
-            throw new Error(
-                `Failed to generate flashcards using OpenRouter: ${error.message}`,
-            );
-        }
+        console.error(
+            "Error generating flashcards via OpenAI/OpenRouter:",
+            error,
+        );
         throw new Error(
             error instanceof Error
-                ? error.message
+                ? `Failed to generate flashcards: ${error.message}`
                 : "An unexpected error occurred during flashcard generation.",
         );
     }

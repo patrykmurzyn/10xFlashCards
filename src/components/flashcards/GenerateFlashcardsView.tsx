@@ -11,6 +11,7 @@ import type { FlashcardSuggestion } from "@/types";
 
 const GenerateFlashcardsView: React.FC = () => {
   const [sourceText, setSourceText] = useState("");
+  const [numCards, setNumCards] = useState(10);
   const {
     generate,
     suggestions: hookSuggestions,
@@ -33,7 +34,7 @@ const GenerateFlashcardsView: React.FC = () => {
   const isValid =
     sourceText.length >= minLength && sourceText.length <= maxLength;
   const handleGenerate = () => {
-    if (isValid) generate(sourceText);
+    if (isValid) generate(sourceText, numCards);
   };
   const [statusMap, setStatusMap] = useState<
     Record<number, "pending" | "approved" | "edited" | "rejected">
@@ -81,10 +82,10 @@ const GenerateFlashcardsView: React.FC = () => {
       return;
     }
 
-    const flashcards = selectedFlashcards.map(({ suggestion: s }) => ({
+    const flashcards = selectedFlashcards.map(({ suggestion: s, idx }) => ({
       front: s.front,
       back: s.back,
-      source: s.source,
+      source: statusMap[idx] === "edited" ? "ai-edited" : "ai-full",
       generation_id: generationId,
     }));
 
@@ -105,10 +106,29 @@ const GenerateFlashcardsView: React.FC = () => {
         minLength={minLength}
         maxLength={maxLength}
       />
-      <GenerateButton
-        disabled={!isValid || isLoading}
-        onClick={handleGenerate}
-      />
+      <div className="flex items-center gap-4 mb-4">
+        <label htmlFor="numCards" className="flex items-center">
+          <span className="mr-2">Number of flashcards:</span>
+          <input
+            id="numCards"
+            type="number"
+            min="1"
+            max="50"
+            value={numCards}
+            onChange={(e) =>
+              setNumCards(
+                Math.max(1, Math.min(50, parseInt(e.target.value) || 10))
+              )
+            }
+            className="w-16 px-2 py-1 border rounded"
+            aria-label="Number of flashcards to generate"
+          />
+        </label>
+        <GenerateButton
+          disabled={!isValid || isLoading}
+          onClick={handleGenerate}
+        />
+      </div>
       {isLoading && <SkeletonLoader count={4} />}
       {apiError && (
         <div role="alert" className="text-destructive">

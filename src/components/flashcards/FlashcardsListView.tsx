@@ -49,10 +49,17 @@ const FlashcardsListView: React.FC = () => {
     if (!editingFlashcard) return;
 
     try {
+      // Determine the correct source value
+      // If the current source is 'ai-full', change it to 'ai-edited'
+      const sourceValue =
+        editingFlashcard.source === "AI-full"
+          ? "AI-edited"
+          : editingFlashcard.source;
+
       await updateFlashcard(editingFlashcard.id, {
         front: updatedFlashcard.front,
         back: updatedFlashcard.back,
-        source: editingFlashcard.source,
+        source: sourceValue,
       });
       toast.success("Flashcard updated successfully");
       setIsEditModalOpen(false);
