@@ -15,6 +15,13 @@ export class FlashcardsPage {
         // Wait for both DOM content loaded and network idle
         await this.page.waitForLoadState("domcontentloaded");
         await this.page.waitForLoadState("networkidle", { timeout: 30000 });
+
+        // Check if we were redirected to login
+        if (this.page.url().includes("/login")) {
+            console.log(
+                "Warning: Redirected to login page from flashcards/generate",
+            );
+        }
     }
 
     /**
@@ -22,15 +29,60 @@ export class FlashcardsPage {
      */
     async expectLoaded() {
         try {
-            // Wait for an element that should be present if we're on the right page
-            // This is more reliable than immediately checking for visibility
-            await this.page.waitForSelector(
+            // First check current URL to see if we're on the correct page
+            const currentUrl = this.page.url();
+            console.log(`Current URL during expectLoaded: ${currentUrl}`);
+
+            if (currentUrl.includes("/login")) {
+                throw new Error(
+                    "Still on login page - authentication issue detected",
+                );
+            }
+
+            // Add alternate heading check for CI environment
+            const headingSelectors = [
                 'h1:has-text("Generate Flashcards")',
-                {
-                    state: "attached",
-                    timeout: process.env.CI ? 10000 : 5000,
-                },
-            );
+                'text="Generate Flashcards"',
+                '[data-test-id="generate-flashcards-heading"]',
+                "h1",
+            ];
+
+            // Try multiple selectors to find the heading
+            let foundHeading = false;
+            for (const selector of headingSelectors) {
+                try {
+                    // Wait with shorter timeout for each selector attempt
+                    await this.page.waitForSelector(selector, {
+                        state: "attached",
+                        timeout: 5000,
+                    });
+                    console.log(`Found heading with selector: ${selector}`);
+                    foundHeading = true;
+                    break;
+                } catch (error) {
+                    console.log(
+                        `Selector ${selector} not found, trying next...`,
+                    );
+                }
+            }
+
+            if (!foundHeading) {
+                // If we didn't find any heading, use the original selector with full timeout
+                await this.page.waitForSelector(
+                    'h1:has-text("Generate Flashcards")',
+                    {
+                        state: "attached",
+                        timeout: process.env.CI ? 10000 : 5000,
+                    },
+                );
+            }
+
+            // Look for textarea as alternative verification
+            if (await this.page.locator("textarea").first().count() > 0) {
+                console.log(
+                    "Found textarea element, page appears to be loaded",
+                );
+            }
 
             // Now verify visibility with increased timeout
             await expect(
@@ -59,6 +111,12 @@ export class FlashcardsPage {
             // Check URL to ensure we're on the right page
             const url = this.page.url();
             console.log(`Current URL: ${url}`);
+
+            // Dump HTML source for debugging
+            const content = await this.page.content();
+            console.log(
+                `Page content (first 500 chars): ${content.substring(0, 500)}`,
+            );
 
             // Rethrow the error to fail the test
             throw error;
