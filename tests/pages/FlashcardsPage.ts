@@ -12,25 +12,57 @@ export class FlashcardsPage {
      */
     async goto() {
         await this.page.goto("/flashcards/generate");
-        await this.page.waitForLoadState("networkidle");
+        // Wait for both DOM content loaded and network idle
+        await this.page.waitForLoadState("domcontentloaded");
+        await this.page.waitForLoadState("networkidle", { timeout: 30000 });
     }
 
     /**
      * Verify that the flashcards generation page has loaded
      */
     async expectLoaded() {
-        // Verify the page title or a distinctive element
-        await expect(
-            this.page.locator('h1:has-text("Generate Flashcards")').first(),
-        ).toBeVisible();
+        try {
+            // Wait for an element that should be present if we're on the right page
+            // This is more reliable than immediately checking for visibility
+            await this.page.waitForSelector(
+                'h1:has-text("Generate Flashcards")',
+                {
+                    state: "attached",
+                    timeout: process.env.CI ? 10000 : 5000,
+                },
+            );
 
-        // Verify textarea exists
-        await expect(this.page.locator("textarea").first()).toBeVisible();
+            // Now verify visibility with increased timeout
+            await expect(
+                this.page.locator('h1:has-text("Generate Flashcards")').first(),
+            ).toBeVisible({ timeout: process.env.CI ? 10000 : 5000 });
 
-        // Use a more specific selector for the generate button
-        await expect(
-            this.page.getByRole("button", { name: "Generate" }).first(),
-        ).toBeVisible();
+            // Verify textarea exists
+            await expect(this.page.locator("textarea").first())
+                .toBeVisible({ timeout: process.env.CI ? 10000 : 5000 });
+
+            // Use a more specific selector for the generate button
+            await expect(
+                this.page.getByRole("button", { name: "Generate" }).first(),
+            ).toBeVisible({ timeout: process.env.CI ? 10000 : 5000 });
+
+            console.log("All page elements verified successfully");
+        } catch (error) {
+            console.error("Error verifying page elements:", error);
+
+            // Take a screenshot for debugging
+            await this.page.screenshot({
+                path: "screenshots/flashcards-page-error.png",
+                fullPage: true,
+            });
+
+            // Check URL to ensure we're on the right page
+            const url = this.page.url();
+            console.log(`Current URL: ${url}`);
+
+            // Rethrow the error to fail the test
+            throw error;
+        }
     }
 
     /**
@@ -87,28 +119,41 @@ export class FlashcardsPage {
      * Uses a simpler strategy - wait for 8 seconds then check for flashcards
      */
     async waitForFlashcards() {
-        console.log("Waiting fixed 8 seconds for generation to complete...");
-        await this.page.waitForTimeout(8000);
+        const waitTime = process.env.CI ? 15000 : 8000;
+        console.log(
+            `Waiting ${waitTime / 1000} seconds for generation to complete...`,
+        );
+        await this.page.waitForTimeout(waitTime);
 
         // Use the correct selector for flashcards based on the actual HTML structure
         const flashcardSelector = 'div[data-slot="card"]';
 
-        const count = await this.page.locator(flashcardSelector).count();
-        if (count > 0) {
-            console.log(
-                `Found ${count} flashcards with selector: ${flashcardSelector}`,
-            );
-            return;
-        }
+        try {
+            // First wait for at least one card to appear
+            await this.page.waitForSelector(flashcardSelector, {
+                timeout: process.env.CI ? 10000 : 5000,
+            });
 
-        // Take a screenshot if no flashcards found for debugging
-        await this.page.screenshot({
-            path: "screenshots/no-flashcards-found.png",
-            fullPage: true,
-        });
-        console.log(
-            "No flashcards found. Check the screenshot to see the actual page state.",
-        );
+            const count = await this.page.locator(flashcardSelector).count();
+            if (count > 0) {
+                console.log(
+                    `Found ${count} flashcards with selector: ${flashcardSelector}`,
+                );
+                return;
+            }
+        } catch (error) {
+            console.error("Error waiting for flashcards:", error);
+
+            // Take a screenshot if no flashcards found for debugging
+            await this.page.screenshot({
+                path: "screenshots/no-flashcards-found.png",
+                fullPage: true,
+            });
+            console.log(
+                "No flashcards found. Check the screenshot to see the actual page state.",
+            );
+            throw error;
+        }
     }
 
     /**

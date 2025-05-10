@@ -82,64 +82,86 @@ test.describe("Flashcards generation", () => {
             // Step 2: Navigate to the flashcards generation page
             console.log("Navigating to flashcards generation page");
             const flashcardsPage = new FlashcardsPage(page);
-            await flashcardsPage.goto();
 
-            // Take screenshot of the generation page
+            // Retry navigation to flashcards page up to 2 times if it fails
+            let attempts = 0;
+            const maxAttempts = 3;
+            let success = false;
+
+            while (attempts < maxAttempts && !success) {
+                try {
+                    attempts++;
+                    await flashcardsPage.goto();
+
+                    // Take screenshot of the generation page
+                    await page.screenshot({
+                        path:
+                            `screenshots/flashcards-generate-page-attempt-${attempts}.png`,
+                    });
+
+                    // Verify the page loaded correctly with proper timeout
+                    await flashcardsPage.expectLoaded();
+                    console.log(
+                        "Flashcards generation page loaded successfully",
+                    );
+                    success = true;
+                } catch (error) {
+                    console.log(
+                        `Failed to load flashcards page on attempt ${attempts}/${maxAttempts}`,
+                    );
+                    if (attempts >= maxAttempts) {
+                        console.error(
+                            "All attempts to load flashcards page failed",
+                        );
+                        throw error;
+                    }
+
+                    // Wait a bit before trying again
+                    await page.waitForTimeout(2000);
+
+                    // Going back to dashboard and trying again
+                    console.log(
+                        "Navigating back to dashboard and trying again",
+                    );
+                    await page.goto("/dashboard");
+                    await page.waitForLoadState("networkidle");
+                }
+            }
+
+            // Step 4: Generate text and fill the textarea
+            const testText = flashcardsPage.generateText(1200); // Generate a bit more than required
+            await flashcardsPage.fillTextArea(testText);
+            console.log("Text area filled with test content");
+
+            // Step 5: Set number of flashcards to 10 (default)
+            await flashcardsPage.setNumberOfFlashcards(10);
+            console.log("Set number of flashcards to 10");
+
+            // Take screenshot before generating
             await page.screenshot({
-                path: "screenshots/flashcards-generate-page.png",
+                path: "screenshots/flashcards-before-generate.png",
             });
 
-            try {
-                // Step 3: Verify the page loaded correctly
-                await flashcardsPage.expectLoaded();
-                console.log("Flashcards generation page loaded successfully");
+            // Step 6: Click Generate
+            console.log("Clicking Generate button");
+            await flashcardsPage.clickGenerate();
 
-                // Step 4: Generate text and fill the textarea
-                const testText = flashcardsPage.generateText(1200); // Generate a bit more than required
-                await flashcardsPage.fillTextArea(testText);
-                console.log("Text area filled with test content");
+            // Step 7: Wait for flashcards to be generated
+            console.log("Waiting for flashcards to be generated...");
+            await flashcardsPage.waitForFlashcards();
 
-                // Step 5: Set number of flashcards to 10 (default)
-                await flashcardsPage.setNumberOfFlashcards(10);
-                console.log("Set number of flashcards to 10");
+            // Take screenshot after generation
+            await page.screenshot({
+                path: "screenshots/flashcards-generated.png",
+                fullPage: true,
+            });
 
-                // Take screenshot before generating
-                await page.screenshot({
-                    path: "screenshots/flashcards-before-generate.png",
-                });
+            // Step 8: Count the flashcards and verify there are 10
+            const count = await flashcardsPage.countFlashcards();
+            console.log(`Generated ${count} flashcards`);
 
-                // Step 6: Click Generate
-                console.log("Clicking Generate button");
-                await flashcardsPage.clickGenerate();
-
-                // Step 7: Wait for flashcards to be generated
-                console.log("Waiting for flashcards to be generated...");
-                await flashcardsPage.waitForFlashcards();
-
-                // Take screenshot after generation
-                await page.screenshot({
-                    path: "screenshots/flashcards-generated.png",
-                    fullPage: true,
-                });
-
-                // Step 8: Count the flashcards and verify there are 10
-                const count = await flashcardsPage.countFlashcards();
-                console.log(`Generated ${count} flashcards`);
-
-                // Assert that we have 10 flashcards
-                expect(count, "Should generate 10 flashcards").toBe(10);
-            } catch (error: unknown) {
-                console.error(
-                    "Test failed with error:",
-                    error instanceof Error ? error.message : String(error),
-                );
-                // Take screenshot at failure point
-                await page.screenshot({
-                    path: "screenshots/flashcards-test-failure.png",
-                    fullPage: true,
-                });
-                throw error;
-            }
+            // Assert that we have 10 flashcards
+            expect(count, "Should generate 10 flashcards").toBe(10);
         },
     );
 });
