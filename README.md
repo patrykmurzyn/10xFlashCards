@@ -114,11 +114,14 @@ The workflow uses the "Test" environment configured in the GitHub repository wit
 - `OPENROUTER_API_KEY`: API key for OpenRouter.ai
 - `PUBLIC_SUPABASE_KEY` and `PUBLIC_SUPABASE_URL`: Supabase credentials
 
-To run the tests locally before pushing:
+To run the CI workflow locally before pushing:
 
 ```bash
 # Run unit tests (requires .env file)
 npm run test
+
+# Setup E2E testing environment - install browsers (one-time setup)
+npm run setup:e2e
 
 # Run E2E tests (requires both .env and .env.test files)
 npm run e2e

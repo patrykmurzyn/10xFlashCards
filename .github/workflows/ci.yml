@@ -50,6 +50,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Clear any existing browser processes
+      - name: Clean processes
+        run: |
+          killall -9 chrome || true
+          killall -9 chromium || true
+          killall -9 firefox || true
+          mkdir -p screenshots
+
+      # Install Playwright browsers
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
@@ -66,15 +75,6 @@ jobs:
           echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env.test
           echo "PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_SUPABASE_URL }}" >> .env.test
           echo "PUBLIC_SUPABASE_KEY=${{ secrets.PUBLIC_SUPABASE_KEY }}" >> .env.test
-
-      # Clear any existing browser processes and caches before testing
-      - name: Clean environment
-        run: |
-          killall -9 chrome || true
-          killall -9 chromium || true
-          killall -9 firefox || true
-          rm -rf ~/.cache/ms-playwright/
-          mkdir -p screenshots
 
       # Increase file descriptors limit for test process
       - name: Increase file descriptors limit
