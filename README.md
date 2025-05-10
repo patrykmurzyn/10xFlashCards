@@ -96,19 +96,31 @@ The project uses GitHub Actions for continuous integration. The workflow is conf
 1. **Unit Tests:** Runs all unit tests using Vitest.
 2. **End-to-End Tests:** Runs all E2E tests using Playwright.
 
-The CI workflow automatically uses the environment variables configured in the GitHub repository's "Test" environment:
+The CI workflow automatically creates required environment files:
+
+- `.env` - Used by the application and unit tests, containing Supabase and OpenRouter API keys
+- `.env.test` - Used by E2E tests, containing test user credentials and API keys
+
+For E2E tests, the workflow automatically:
+
+1. Creates the necessary environment files
+2. Starts the application server (configured in `playwright.config.ts`)
+3. Runs the Playwright tests against the running application
+4. Uploads test reports and results as artifacts
+
+The workflow uses the "Test" environment configured in the GitHub repository with these secrets:
 
 - `E2E_USERNAME` and `E2E_PASSWORD`: Used for authentication in E2E tests
 - `OPENROUTER_API_KEY`: API key for OpenRouter.ai
 - `PUBLIC_SUPABASE_KEY` and `PUBLIC_SUPABASE_URL`: Supabase credentials
 
-To run the CI workflow locally before pushing:
+To run the tests locally before pushing:
 
 ```bash
-# Run unit tests
+# Run unit tests (requires .env file)
 npm run test
 
-# Run E2E tests (requires .env.test file with proper credentials)
+# Run E2E tests (requires both .env and .env.test files)
 npm run e2e
 ```
 
