@@ -80,8 +80,39 @@ The following scripts are available via npm:
 - `npm run build`: Builds the application for production.
 - `npm run preview`: Serves the production build locally for previewing.
 - `npm run astro ...`: Runs Astro CLI commands (e.g., `astro check`, `astro add`).
+- `npm run test`: Runs unit tests using Vitest.
+- `npm run test:watch`: Runs unit tests in watch mode.
+- `npm run test:ui`: Runs unit tests with UI.
+- `npm run test:coverage`: Runs unit tests with coverage report.
+- `npm run e2e`: Runs end-to-end tests using Playwright.
+- `npm run e2e:ui`: Runs end-to-end tests with UI.
+- `npm run e2e:debug`: Runs end-to-end tests in debug mode.
+- `npm run e2e:codegen`: Generates test code with Playwright.
 
-## 5. Project Scope
+## 5. Continuous Integration
+
+The project uses GitHub Actions for continuous integration. The workflow is configured in `.github/workflows/ci.yml` and includes:
+
+1. **Unit Tests:** Runs all unit tests using Vitest.
+2. **End-to-End Tests:** Runs all E2E tests using Playwright.
+
+The CI workflow automatically uses the environment variables configured in the GitHub repository's "Test" environment:
+
+- `E2E_USERNAME` and `E2E_PASSWORD`: Used for authentication in E2E tests
+- `OPENROUTER_API_KEY`: API key for OpenRouter.ai
+- `PUBLIC_SUPABASE_KEY` and `PUBLIC_SUPABASE_URL`: Supabase credentials
+
+To run the CI workflow locally before pushing:
+
+```bash
+# Run unit tests
+npm run test
+
+# Run E2E tests (requires .env.test file with proper credentials)
+npm run e2e
+```
+
+## 6. Project Scope
 
 **Core Features:**
 
@@ -104,7 +135,7 @@ The following scripts are available via npm:
 - Advanced notification system.
 - Advanced keyword search for flashcards.
 
-## 6. Project Status
+## 7. Project Status
 
 - **Version:** 0.0.1 (as per `package.json`)
 - **Status:** Currently under active development.

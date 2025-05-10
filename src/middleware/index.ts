@@ -50,6 +50,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
         // Retrieve the current user information by verifying the session with Supabase
         const { data, error: getUserError } = await supabase.auth.getUser();
+
+        // We need the session for expiry tracking, but we'll use the user from getUser() for authentication
         const { data: sessionData } = await supabase.auth.getSession();
 
         const user = data?.user || null;

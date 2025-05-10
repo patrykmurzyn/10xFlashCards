@@ -23,7 +23,24 @@ export async function deleteFlashcard(
         throw new Error("User ID is required to delete a flashcard");
     }
 
-    const { data, error } = await supabase
+    // First check if the flashcard exists for this user
+    const checkResult = await supabase
+        .from("flashcards")
+        .select("id")
+        .eq("id", id)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (checkResult.error) {
+        throw new Error(`Database error: ${checkResult.error.message}`);
+    }
+
+    if (!checkResult.data) {
+        throw new Error("Flashcard not found");
+    }
+
+    // Now that we know the flashcard exists, delete it
+    const { error } = await supabase
         .from("flashcards")
         .delete()
         .eq("id", id)
@@ -31,12 +48,6 @@ export async function deleteFlashcard(
 
     if (error) {
         throw new Error(`Error deleting flashcard: ${error.message}`);
-    }
-
-    // Ensure data is an array; if null, default to empty array
-    const flashcards = Array.isArray(data) ? data : [];
-    if (flashcards.length === 0) {
-        throw new Error("Flashcard not found");
     }
 }
 

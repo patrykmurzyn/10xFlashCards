@@ -46,11 +46,24 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
         });
     }
 
-    const supabase = locals.supabase;
+    const { supabase, session } = locals;
+
+    // Check if user is authenticated
+    if (!session?.user) {
+        return new Response(
+            JSON.stringify({ error: "Unauthorized" }),
+            {
+                status: 401,
+                headers: { "Content-Type": "application/json" },
+            },
+        );
+    }
+
+    const userId = session.user.id;
 
     try {
         // Call the flashcard service to delete the flashcard
-        await deleteFlashcard(supabase, id, DEFAULT_USER_ID);
+        await deleteFlashcard(supabase, id, userId);
         return new Response(null, { status: 204 });
     } catch (err: any) {
         console.error("Error deleting flashcard:", err);
