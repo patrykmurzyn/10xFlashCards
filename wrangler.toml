@@ -1,5 +1,5 @@
 name = "10xflashcards"
-compatibility_date = "2025-05-11"
+compatibility_date = "2025-03-25"
 main = "./dist/_worker.js/index.js"
 compatibility_flags = ["nodejs_compat"]
 
