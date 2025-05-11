@@ -123,3 +123,32 @@ jobs:
           name: test-results
           path: test-results/
           retention-days: 7
+
+  status-comment:
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests, e2e-tests] # Only run when all three jobs pass
+    if: github.event_name == 'pull_request' # Only run on pull requests
+    steps:
+      - name: Post status comment
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { issue: { number: issue_number }, repo: { owner, repo } } = context;
+
+            const workflow_url = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+
+            const comment = `## ✅ All CI checks passed successfully!
+
+            - ✓ Linting passed
+            - ✓ Unit tests passed
+            - ✓ E2E tests passed
+
+            [View workflow run details](${workflow_url})`;
+
+            github.rest.issues.createComment({
+              issue_number,
+              owner,
+              repo,
+              body: comment
+            });
