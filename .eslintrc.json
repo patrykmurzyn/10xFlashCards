@@ -1,0 +1,72 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint", "react"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:astro/recommended"
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-namespace": "off",
+    "react/react-in-jsx-scope": "off",
+    "react/no-unescaped-entities": "off"
+  },
+  "overrides": [
+    {
+      "files": ["*.astro"],
+      "parser": "astro-eslint-parser",
+      "parserOptions": {
+        "parser": "@typescript-eslint/parser",
+        "extraFileExtensions": [".astro"]
+      },
+      "rules": {
+        "react/react-in-jsx-scope": "off",
+        "react/no-unknown-property": [
+          "error",
+          {
+            "ignore": [
+              "class",
+              "stroke-linecap",
+              "stroke-linejoin",
+              "stroke-width",
+              "fetchPriority",
+              "fetchpriority",
+              "is:global"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/*.test.tsx",
+        "**/*.test.ts",
+        "tests/**/*.ts",
+        "tests/**/*.tsx",
+        "tests-examples/**/*.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "react/react-in-jsx-scope": "off"
+      }
+    }
+  ],
+  "parserOptions": {
+    "project": null,
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  }
+}

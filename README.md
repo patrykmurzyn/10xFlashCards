@@ -88,13 +88,16 @@ The following scripts are available via npm:
 - `npm run e2e:ui`: Runs end-to-end tests with UI.
 - `npm run e2e:debug`: Runs end-to-end tests in debug mode.
 - `npm run e2e:codegen`: Generates test code with Playwright.
+- `npm run setup:e2e`: Installs Playwright browsers and dependencies.
+- `npm run lint`: Lints the codebase using ESLint.
 
 ## 5. Continuous Integration
 
 The project uses GitHub Actions for continuous integration. The workflow is configured in `.github/workflows/ci.yml` and includes:
 
-1. **Unit Tests:** Runs all unit tests using Vitest.
-2. **End-to-End Tests:** Runs all E2E tests using Playwright.
+1. **Linting:** Checks the codebase for linting errors using ESLint.
+2. **Unit Tests:** Runs all unit tests using Vitest.
+3. **End-to-End Tests:** Runs all E2E tests using Playwright.
 
 The CI workflow automatically creates required environment files:
 
