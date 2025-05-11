@@ -19,6 +19,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^12.5.2",
     "@astrojs/node": "^9.2.1",
     "@astrojs/react": "^4.2.3",
     "@auth/core": "^0.37.4",
