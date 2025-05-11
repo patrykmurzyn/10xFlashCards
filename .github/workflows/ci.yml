@@ -45,9 +45,9 @@ jobs:
 
       - name: Create .env file for unit tests
         run: |
-          echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > .env
-          echo "PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_SUPABASE_URL }}" >> .env
-          echo "PUBLIC_SUPABASE_KEY=${{ secrets.PUBLIC_SUPABASE_KEY }}" >> .env
+          echo "PUBLIC_OPENROUTER_API_KEY=${{ secrets.PUBLIC_OPENROUTER_API_KEY }}" > .env
+          echo "PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_OPENROUTER_API_KEY }}" >> .env
+          echo "PUBLIC_SUPABASE_KEY=${{ secrets.PUBLIC_OPENROUTER_API_KEY }}" >> .env
 
       - name: Run unit tests
         run: npm run test
@@ -84,7 +84,7 @@ jobs:
 
       - name: Create .env file for application
         run: |
-          echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > .env
+          echo "PUBLIC_OPENROUTER_API_KEY=${{ secrets.PUBLIC_OPENROUTER_API_KEY }}" > .env
           echo "PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_SUPABASE_URL }}" >> .env
           echo "PUBLIC_SUPABASE_KEY=${{ secrets.PUBLIC_SUPABASE_KEY }}" >> .env
 
@@ -92,7 +92,7 @@ jobs:
         run: |
           echo "E2E_USERNAME=${{ secrets.E2E_USERNAME }}" > .env.test
           echo "E2E_PASSWORD=${{ secrets.E2E_PASSWORD }}" >> .env.test
-          echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env.test
+          echo "PUBLIC_OPENROUTER_API_KEY=${{ secrets.PUBLIC_OPENROUTER_API_KEY }}" >> .env.test
           echo "PUBLIC_SUPABASE_URL=${{ secrets.PUBLIC_SUPABASE_URL }}" >> .env.test
           echo "PUBLIC_SUPABASE_KEY=${{ secrets.PUBLIC_SUPABASE_KEY }}" >> .env.test
 

@@ -295,6 +295,6 @@ Status: [New/In Progress/Fixed/Verified]
 
 ### 14.3 Environment & Secrets
 
-- Manage SUPABASE_URL, SUPABASE_KEY, OPENROUTER_API_KEY via GitHub Secrets
+- Manage SUPABASE_URL, SUPABASE_KEY, PUBLIC_OPENROUTER_API_KEY via GitHub Secrets
 - Rotate secrets monthly with least-privilege policies
 - Use ephemeral test DB via Docker Compose in CI

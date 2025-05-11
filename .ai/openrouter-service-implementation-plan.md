@@ -43,10 +43,10 @@ export class OpenRouterService {
 
   constructor() {
     // Load API Key from environment variables
-    const apiKey = import.meta.env.OPENROUTER_API_KEY;
+    const apiKey = import.meta.env.PUBLIC_OPENROUTER_API_KEY;
     if (!apiKey || typeof apiKey !== "string") {
       console.error(
-        "OpenRouter API key is missing or invalid. Please set OPENROUTER_API_KEY environment variable."
+        "OpenRouter API key is missing or invalid. Please set PUBLIC_OPENROUTER_API_KEY environment variable."
       );
       throw new OpenRouterError("Missing OpenRouter API Key configuration.");
     }
@@ -217,7 +217,7 @@ The primary public method will be `chatCompletion`.
 
 ## 5. Error Handling
 
-- **Configuration Errors**: The constructor throws an `OpenRouterError` if the `OPENROUTER_API_KEY` environment variable is missing or invalid.
+- **Configuration Errors**: The constructor throws an `OpenRouterError` if the `PUBLIC_OPENROUTER_API_KEY` environment variable is missing or invalid.
 - **Network Errors**: `_callApi` catches errors during the `fetch` call (e.g., DNS resolution failure, connection timeout) and throws an `OpenRouterError`. Retries could be added here for transient issues (e.g., using an exponential backoff strategy for specific status codes like 429 or 5xx).
 - **API Errors**: `_parseResponse` checks `response.ok`. For non-2xx responses, it attempts to read the error body, logs the details, and throws an `OpenRouterError` with the status code.
 - **Response Parsing Errors**: `_parseResponse` uses `try...catch` when calling `response.json()` and throws an `OpenRouterError` if parsing fails.
@@ -228,7 +228,7 @@ All errors originating from the service should be instances of `OpenRouterError`
 
 ## 6. Security Considerations
 
-- **API Key Management**: The `OPENROUTER_API_KEY` **must** be stored securely as an environment variable. It should never be hardcoded in the source code or committed to version control. Use `.env` files locally (added to `.gitignore`) and environment variable management tools provided by the hosting platform (e.g., Digital Ocean App Platform environment variables, Docker secrets).
+- **API Key Management**: The `PUBLIC_OPENROUTER_API_KEY` **must** be stored securely as an environment variable. It should never be hardcoded in the source code or committed to version control. Use `.env` files locally (added to `.gitignore`) and environment variable management tools provided by the hosting platform (e.g., Digital Ocean App Platform environment variables, Docker secrets).
 - **Input Sanitization**: While the primary interaction is backend-to-OpenRouter, if user input directly forms part of the prompts sent to the API, consider potential prompt injection risks. Sanitize or carefully structure user input within prompts, especially if the LLM's output is used in security-sensitive contexts (unlikely for flashcard generation, but good practice).
 - **Output Handling**: Be cautious when rendering LLM output directly to the frontend. While OpenRouter models are generally well-behaved, unexpected or improperly formatted output could occur. If rendering HTML based on output, ensure proper escaping to prevent XSS attacks. For structured JSON, validation via the Zod schema adds a layer of safety.
 - **Logging**: Avoid logging the full API key or excessively detailed request/response payloads containing potentially sensitive user data in production logs unless necessary for debugging and properly secured. Log error messages, status codes, and correlation IDs instead.
@@ -242,14 +242,14 @@ All errors originating from the service should be instances of `OpenRouterError`
     npm install zod zod-to-json-schema
     ```
 3.  **Define Types and Error Class**: Add the `Message`, `ResponseFormat` types and the `OpenRouterError` custom error class at the top of the file.
-4.  **Implement Constructor**: Create the `OpenRouterService` class and implement the constructor to load the `OPENROUTER_API_KEY` from `import.meta.env`, including the check for its existence.
+4.  **Implement Constructor**: Create the `OpenRouterService` class and implement the constructor to load the `PUBLIC_OPENROUTER_API_KEY` from `import.meta.env`, including the check for its existence.
 5.  **Implement Private Helpers**:
     - Implement `_createResponseFormat` using `zod-to-json-schema`.
     - Implement `_preparePayload` to build the request body, calling `_createResponseFormat` if a schema is provided.
     - Implement `_callApi` using `fetch`, setting headers and handling basic network errors.
     - Implement `_parseResponse`, including status checks, JSON parsing, and conditional Zod schema validation. Ensure appropriate `OpenRouterError` instances are thrown.
 6.  **Implement Public Method**: Implement the `chatCompletion` method, orchestrating calls to the private helpers.
-7.  **Add Environment Variable**: Add `OPENROUTER_API_KEY=your_actual_api_key` to your local `.env` file (ensure `.env` is in `.gitignore`) and configure it securely in your deployment environment (Digital Ocean).
+7.  **Add Environment Variable**: Add `PUBLIC_OPENROUTER_API_KEY=your_actual_api_key` to your local `.env` file (ensure `.env` is in `.gitignore`) and configure it securely in your deployment environment (Digital Ocean).
 8.  **Integrate into API Route (Example)**: Create or modify an Astro API route (e.g., `src/pages/api/generate-flashcards.ts`) to use the service:
 
     ````typescript

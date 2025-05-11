@@ -114,7 +114,7 @@ For E2E tests, the workflow automatically:
 The workflow uses the "Test" environment configured in the GitHub repository with these secrets:
 
 - `E2E_USERNAME` and `E2E_PASSWORD`: Used for authentication in E2E tests
-- `OPENROUTER_API_KEY`: API key for OpenRouter.ai
+- `PUBLIC_OPENROUTER_API_KEY`: API key for OpenRouter.ai
 - `PUBLIC_SUPABASE_KEY` and `PUBLIC_SUPABASE_URL`: Supabase credentials
 
 To run the CI workflow locally before pushing:

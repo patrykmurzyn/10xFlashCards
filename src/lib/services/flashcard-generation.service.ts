@@ -27,10 +27,10 @@ interface GenerateFlashcardsOptions {
  * Returns an instance of the OpenAI client configured to use OpenRouter
  */
 function getOpenAIClient() {
-    const apiKey = import.meta.env.OPENROUTER_API_KEY;
+    const apiKey = import.meta.env.PUBLIC_OPENROUTER_API_KEY;
     if (!apiKey || typeof apiKey !== "string") {
         throw new Error(
-            "OpenRouter API key is missing or invalid. Please set OPENROUTER_API_KEY environment variable.",
+            "OpenRouter API key is missing or invalid. Please set PUBLIC_OPENROUTER_API_KEY environment variable.",
         );
     }
 
