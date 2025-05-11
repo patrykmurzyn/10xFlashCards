@@ -6,3 +6,6 @@ compatibility_flags = ["nodejs_compat"]
 [assets]
 binding = "ASSETS"
 directory = "./dist" 
+
+[observability.logs]
+enabled = true
