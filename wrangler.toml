@@ -1,6 +1,7 @@
 name = "10xflashcards"
 compatibility_date = "2025-05-11"
 main = "dist/_worker.js"
+compatibility_flags = ["nodejs_compat"]
 
 [site]
 bucket = "./dist/client" 
