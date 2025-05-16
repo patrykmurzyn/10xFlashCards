@@ -43,31 +43,56 @@ test.describe("Flashcards generation", () => {
             // Step 1: Log in first
             const loginPage = new LoginPage(page);
             await loginPage.goto();
+            await page.waitForLoadState("networkidle", { timeout: 10000 }); // Ensure login page is fully idle
 
             // Take screenshot before login
             await page.screenshot({
                 path: "screenshots/flashcards-test-login.png",
             });
 
-            // Login with credentials and wait for dashboard redirect
-            await loginPage.login(testEmail, testPassword);
-            await loginPage.waitForDashboardRedirect();
-            // Wait for network to settle on dashboard
-            await page.waitForLoadState("networkidle", {
-                timeout: process.env.CI ? 20000 : 10000,
+            // Wait for login button to be clickable
+            await page.waitForSelector('button:has-text("Sign in")', {
+                timeout: 7000,
             });
-            // Verify dashboard heading appears - relying on waitForDashboardRedirect, but a direct check here is also good.
-            const dashboardHeader = page.locator(
-                'h1:has-text("Welcome to 10xFlashCards")',
-            );
-            await expect(dashboardHeader).toBeVisible({
-                timeout: process.env.CI ? 20000 : 10000,
-            });
-            console.log(
-                "Dashboard verified after login using page object helper methods.",
-            );
-            // Brief pause to ensure session is fully established
-            await page.waitForTimeout(2000);
+
+            // Perform login actions
+            await loginPage.fillEmail(testEmail);
+            await loginPage.fillPassword(testPassword);
+            await loginPage.clickSignIn();
+
+            // Wait for navigation to dashboard and for the dashboard to be fully loaded and settled
+            try {
+                await page.waitForURL("**/dashboard", {
+                    timeout: process.env.CI ? 25000 : 15000,
+                });
+                console.log("Successfully navigated to /dashboard URL.");
+                await page.waitForLoadState("networkidle", {
+                    timeout: process.env.CI ? 15000 : 7000,
+                });
+                console.log("Network is idle after dashboard navigation.");
+
+                const dashboardHeader = page.locator(
+                    'h1:has-text("Welcome to 10xFlashCards")',
+                );
+                await expect(dashboardHeader).toBeVisible({
+                    timeout: process.env.CI ? 20000 : 10000,
+                });
+                console.log(
+                    "Dashboard verified after login (direct sequence).",
+                );
+                await page.waitForTimeout(2000); // Final pause for session
+            } catch (error) {
+                console.error(
+                    "Failed to verify dashboard after initial login (direct sequence). URL: " +
+                        page.url(),
+                    error,
+                );
+                await page.screenshot({
+                    path:
+                        "screenshots/initial-login-dashboard-failure-direct.png",
+                });
+                throw error;
+            }
 
             // Extra check to validate dashboard content to confirm we're logged in
             try {
