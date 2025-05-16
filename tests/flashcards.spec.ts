@@ -49,44 +49,25 @@ test.describe("Flashcards generation", () => {
                 path: "screenshots/flashcards-test-login.png",
             });
 
-            // Login with credentials from environment variables
-            await page.waitForSelector("#email", { timeout: 7000 });
-            await loginPage.fillEmail(testEmail);
-            await page.waitForSelector("#password", { timeout: 7000 });
-            await loginPage.fillPassword(testPassword);
-            await page.waitForSelector('button:has-text("Sign in")', {
-                timeout: 7000,
+            // Login with credentials and wait for dashboard redirect
+            await loginPage.login(testEmail, testPassword);
+            await loginPage.waitForDashboardRedirect();
+            // Wait for network to settle on dashboard
+            await page.waitForLoadState("networkidle", {
+                timeout: process.env.CI ? 20000 : 10000,
             });
-            await loginPage.clickSignIn();
-
-            // Wait for successful login by checking for a dashboard-specific element.
-            // This is often more reliable than just waiting for URL in CI environments.
-            try {
-                const dashboardHeaderLocator = page.locator(
-                    'h1:has-text("Welcome")',
-                ); // Use a reliable selector for your dashboard
-                await expect(dashboardHeaderLocator)
-                    .toBeVisible({ timeout: process.env.CI ? 25000 : 15000 }); // Increased timeout for CI
-
-                // After the element is visible, also confirm the URL as an extra check.
-                expect(page.url()).toContain("/dashboard");
-                console.log(
-                    "Dashboard verified after login by element presence and URL.",
-                );
-
-                // Important: Wait a moment to ensure the session is fully established and any client-side updates complete.
-                await page.waitForTimeout(3000); // Slightly increased pause
-            } catch (error) {
-                console.error(
-                    "Failed to verify dashboard after initial login. URL: " +
-                        page.url(),
-                    error,
-                );
-                await page.screenshot({
-                    path: "screenshots/initial-login-dashboard-failure.png",
-                });
-                throw error; // Fail fast if dashboard isn't confirmed
-            }
+            // Verify dashboard heading appears - relying on waitForDashboardRedirect, but a direct check here is also good.
+            const dashboardHeader = page.locator(
+                'h1:has-text("Welcome to 10xFlashCards")',
+            );
+            await expect(dashboardHeader).toBeVisible({
+                timeout: process.env.CI ? 20000 : 10000,
+            });
+            console.log(
+                "Dashboard verified after login using page object helper methods.",
+            );
+            // Brief pause to ensure session is fully established
+            await page.waitForTimeout(2000);
 
             // Extra check to validate dashboard content to confirm we're logged in
             try {

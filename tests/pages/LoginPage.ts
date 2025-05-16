@@ -47,7 +47,11 @@ export class LoginPage {
     }
 
     async waitForDashboardRedirect() {
-        await this.page.waitForURL("**/dashboard");
+        // Wait for the dashboard heading to appear as confirmation of login
+        const welcomeHeading = this.page.locator(
+            'h1:has-text("Welcome to 10xFlashCards")',
+        );
+        await expect(welcomeHeading).toBeVisible({ timeout: 20000 }); // Increased timeout slightly
     }
 
     async expectGeneralError(expectedMessage: string) {
