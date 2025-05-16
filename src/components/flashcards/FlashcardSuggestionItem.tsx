@@ -91,34 +91,7 @@ const FlashcardSuggestionItem: React.FC<FlashcardSuggestionItemProps> = ({
       </CardHeader>
       <CardContent>{suggestion.back}</CardContent>
       <CardFooter className="space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-green-400 text-green-400 hover:bg-green-500 hover:text-gray-100 focus:ring-green-500"
-          aria-label="Approve suggestion"
-          onClick={onApprove}
-        >
-          Approve
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-gray-500 text-gray-300 hover:bg-gray-600 hover:text-gray-100 focus:ring-gray-400"
-          aria-label="Edit suggestion"
-          onClick={onEditStart}
-        >
-          Edit
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-red-400 text-red-400 hover:bg-red-500 hover:text-gray-100 focus:ring-red-500"
-          aria-label="Reject suggestion"
-          onClick={onReject}
-        >
-          Reject
-        </Button>
-        {safeStatus === "edited" && (
+        {safeStatus === "edited" ? (
           <Button
             variant="outline"
             size="sm"
@@ -128,6 +101,39 @@ const FlashcardSuggestionItem: React.FC<FlashcardSuggestionItemProps> = ({
           >
             Undo Edit
           </Button>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-green-400 text-green-400 hover:bg-green-500 hover:text-gray-100 focus:ring-green-500"
+              aria-label="Approve suggestion"
+              onClick={onApprove}
+              disabled={safeStatus === "approved" || safeStatus === "rejected"}
+            >
+              Approve
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-gray-500 text-gray-300 hover:bg-gray-600 hover:text-gray-100 focus:ring-gray-400"
+              aria-label="Edit suggestion"
+              onClick={onEditStart}
+              disabled={safeStatus === "approved" || safeStatus === "rejected"}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-400 text-red-400 hover:bg-red-500 hover:text-gray-100 focus:ring-red-500"
+              aria-label="Reject suggestion"
+              onClick={onReject}
+              disabled={safeStatus === "approved" || safeStatus === "rejected"}
+            >
+              Reject
+            </Button>
+          </>
         )}
       </CardFooter>
     </Card>

@@ -119,7 +119,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         // Determine model identifier - use a default if not available in error context
         // TODO: Refine how model identifier is retrieved/passed in case of errors
-        const modelIdentifier = "deepseek/deepseek-chat-v3-0324:free";
+        const modelIdentifier = "mistralai/mistral-7b-instruct:free";
 
         try {
             // Pass userId to logGenerationError

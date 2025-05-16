@@ -1,11 +1,15 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import ProtectedLayout from '../layouts/ProtectedLayout.astro';
+import AuthLayout from '../layouts/AuthLayout.astro';
+import AuthForm from '../components/auth/AuthForm';
+export const prerender = false;
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const { data: { session } } = await Astro.locals.supabase.auth.getSession();
+
+if (session) {
+  return Astro.redirect('/dashboard');
+}
 ---
 
-<ProtectedLayout>
-	<Welcome />
-</ProtectedLayout>
+<AuthLayout>
+  <AuthForm client:load />
+</AuthLayout> 

@@ -54,7 +54,7 @@ export async function generateFlashcards({
     numCards = 10,
 }: GenerateFlashcardsOptions): Promise<GeneratedFlashcardsDTO> {
     const openai = getOpenAIClient();
-    const modelName = "google/gemini-2.0-flash-exp:free";
+    const modelName = "mistralai/mistral-7b-instruct:free";
 
     const systemPrompt = `
 Your task is to create ${numCards} flashcards from the text provided by the user.
