@@ -155,5 +155,5 @@ npm run e2e
 
 ## 7. Project Status
 
-- **Version:** 0.0.1 (as per `package.json`)
+- **Version:** 0.0.2 (as per `package.json`)
 - **Status:** Currently under active development.
