@@ -75,10 +75,13 @@ test.describe("Login functionality", () => {
                 await page.reload();
                 await page.waitForLoadState("networkidle");
 
-                // Make sure we're on the login page
+                // Make sure we're on the login page (which is now '/')
                 const currentUrlBeforeLogin = page.url();
-                if (!currentUrlBeforeLogin.includes("/login")) {
-                    console.log("Not on login page, navigating there...");
+                // Check if we are on the root path, which is the new login page.
+                if (new URL(currentUrlBeforeLogin).pathname !== "/") {
+                    console.log(
+                        "Not on login page (root path), navigating there...",
+                    );
                     await loginPage.goto();
                 }
 
@@ -107,11 +110,13 @@ test.describe("Login functionality", () => {
                         `test-results/login-attempt-${attempt}-after-submit.png`,
                 });
 
-                // Check if we're redirected away from login page
+                // Check if we're redirected away from login page (i.e., to dashboard)
                 const currentUrlAfterLogin = page.url();
-                const redirected = !currentUrlAfterLogin.includes("/login");
+                const redirectedToDashboard = currentUrlAfterLogin.includes(
+                    "/dashboard",
+                );
 
-                if (redirected) {
+                if (redirectedToDashboard) {
                     console.log(
                         "Success! Redirected to:",
                         currentUrlAfterLogin,
@@ -156,7 +161,7 @@ test.describe("Login functionality", () => {
 
                 // Check if we're on login page (redirect back) or the dashboard
                 const finalUrl = page.url();
-                loginSuccess = !finalUrl.includes("/login");
+                loginSuccess = finalUrl.includes("/dashboard");
 
                 if (loginSuccess) {
                     console.log(
@@ -242,8 +247,8 @@ test.describe("Login functionality", () => {
         // Take screenshot of current state
         await page.screenshot({ path: "test-results/after-error.png" });
 
-        // Check we're still on login page
-        expect(page.url()).toContain("/login");
+        // Check we're still on login page (which is now '/')
+        expect(new URL(page.url()).pathname).toBe("/");
 
         // Check if the login button is still visible (we didn't navigate away)
         const loginButtonVisible = await page.isVisible(
@@ -264,8 +269,8 @@ test.describe("Login functionality", () => {
             path: "test-results/empty-form-validation.png",
         });
 
-        // Check we're still on login page
-        expect(page.url()).toContain("/login");
+        // Check we're still on login page (which is now '/')
+        expect(new URL(page.url()).pathname).toBe("/");
 
         // Check if the form is still visible
         const loginButtonVisible = await page.isVisible(

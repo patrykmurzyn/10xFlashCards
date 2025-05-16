@@ -50,9 +50,15 @@ test.describe("Flashcards generation", () => {
             });
 
             // Login with credentials from environment variables
+            await page.waitForSelector("#email", { timeout: 7000 });
             await loginPage.fillEmail(testEmail);
+            await page.waitForSelector("#password", { timeout: 7000 });
             await loginPage.fillPassword(testPassword);
+            await page.waitForSelector('button:has-text("Sign in")', {
+                timeout: 7000,
+            });
             await loginPage.clickSignIn();
+            await page.waitForTimeout(1500); // Allow time for submission/redirect to begin
 
             // Wait for successful login redirect - increase timeout in CI
             try {
@@ -60,28 +66,24 @@ test.describe("Flashcards generation", () => {
                     timeout: process.env.CI ? 20000 : 10000,
                 });
                 console.log("Successfully redirected to dashboard");
+                // More robust dashboard check
+                await expect(page.locator('h1:has-text("Welcome")')) // Replace with a more unique dashboard element if needed
+                    .toBeVisible({ timeout: process.env.CI ? 15000 : 10000 });
+                console.log("Dashboard verified after login.");
+
+                // Important: Wait a moment to ensure the session is established
+                await page.waitForTimeout(3000); // Increased wait time
             } catch (error) {
-                console.log(
-                    "Timeout waiting for dashboard redirect, continuing anyway",
+                console.error(
+                    "Failed to verify dashboard after initial login. URL: " +
+                        page.url(),
+                    error,
                 );
                 // Take screenshot to see what happened
                 await page.screenshot({
-                    path: "screenshots/login-redirect-timeout.png",
+                    path: "screenshots/initial-login-dashboard-failure.png",
                 });
-            }
-
-            // Verify we're logged in
-            try {
-                await expect(page.locator('h1:has-text("Welcome")'))
-                    .toBeVisible({ timeout: process.env.CI ? 15000 : 5000 });
-                console.log("Successfully verified login");
-
-                // Important: Wait a moment to ensure the session is established
-                await page.waitForTimeout(2000);
-            } catch (error) {
-                console.log(
-                    "Could not verify login with welcome message, continuing with test",
-                );
+                throw error; // Fail fast if dashboard isn't confirmed
             }
 
             // Extra check to validate dashboard content to confirm we're logged in
@@ -114,11 +116,23 @@ test.describe("Flashcards generation", () => {
                             `screenshots/flashcards-generate-page-attempt-${attempts}.png`,
                     });
 
-                    // Check if we got redirected to login page
-                    if (page.url().includes("/login")) {
+                    // Check if we got redirected to login page or a problematic URL
+                    const currentUrl = page.url();
+                    if (
+                        currentUrl.includes("/login?redirectTo=") ||
+                        (new URL(currentUrl).pathname === "/" &&
+                            !currentUrl.includes("/dashboard") &&
+                            !(await page.locator(
+                                'h1:has-text("Generate Flashcards")',
+                            ).isVisible({ timeout: 500 })))
+                    ) {
                         console.log(
-                            "Redirected to login page. Re-authenticating...",
+                            `Redirected to login path (${currentUrl}) or root. Re-authenticating...`,
                         );
+
+                        // Explicitly go to the root login page
+                        await loginPage.goto();
+                        await page.waitForLoadState("networkidle");
 
                         // Re-login
                         await loginPage.fillEmail(testEmail);
@@ -175,17 +189,21 @@ test.describe("Flashcards generation", () => {
                     });
 
                     // Make sure we're still on dashboard (still logged in)
-                    if (page.url().includes("/login")) {
+                    const currentUrlDashboardCheck = page.url();
+                    if (
+                        currentUrlDashboardCheck.includes(
+                            "/login?redirectTo=",
+                        ) ||
+                        (new URL(currentUrlDashboardCheck).pathname === "/" &&
+                            !currentUrlDashboardCheck.includes("/dashboard"))
+                    ) {
                         console.log(
-                            "Redirected to login again. Re-authenticating...",
+                            `Redirected to login (${currentUrlDashboardCheck}) again before retry. Re-authenticating...`,
                         );
+                        await loginPage.goto(); // Go to root for login
+                        await page.waitForLoadState("networkidle");
                         await loginPage.fillEmail(testEmail);
                         await loginPage.fillPassword(testPassword);
-                        await loginPage.clickSignIn();
-                        await page.waitForURL("**/dashboard", {
-                            timeout: 15000,
-                        });
-                        await page.waitForTimeout(2000);
                     }
                 }
             }

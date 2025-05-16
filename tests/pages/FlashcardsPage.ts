@@ -16,10 +16,13 @@ export class FlashcardsPage {
         await this.page.waitForLoadState("domcontentloaded");
         await this.page.waitForLoadState("networkidle", { timeout: 30000 });
 
-        // Check if we were redirected to login
-        if (this.page.url().includes("/login")) {
+        // Check if we were redirected to login (which is now the root '/' path)
+        // A more robust check would be to see if login form elements are present.
+        // For now, we'll assume if we are at '/' after trying to go to '/flashcards/generate',
+        // it's a redirect to login.
+        if (new URL(this.page.url()).pathname === "/") {
             console.log(
-                "Warning: Redirected to login page from flashcards/generate",
+                "Warning: Potentially redirected to login page (root path) from flashcards/generate",
             );
         }
     }
@@ -33,10 +36,33 @@ export class FlashcardsPage {
             const currentUrl = this.page.url();
             console.log(`Current URL during expectLoaded: ${currentUrl}`);
 
-            if (currentUrl.includes("/login")) {
+            if (currentUrl.includes("/login?redirectTo=")) {
+                // This means we were redirected to a /login path that likely 404s,
+                // because the actual login is at '/'.
                 throw new Error(
-                    "Still on login page - authentication issue detected",
+                    `Authentication issue: Redirected to "${currentUrl}" when expecting /flashcards/generate. The server should redirect to "/?redirectTo=..."`,
                 );
+            }
+
+            // If the current URL is the root path, and we expect to be on /flashcards/generate, this is an issue.
+            if (
+                new URL(currentUrl).pathname === "/" &&
+                !currentUrl.includes("/flashcards/generate")
+            ) {
+                const isLoginPage = await this.page.locator(
+                    'form button:has-text("Sign in")',
+                ).isVisible({ timeout: 1000 });
+                if (isLoginPage) {
+                    throw new Error(
+                        "Authentication issue: Redirected to root login page when expecting /flashcards/generate. Current URL: " +
+                            currentUrl,
+                    );
+                } else {
+                    throw new Error(
+                        "Navigation issue: On root page, but it does not appear to be the login page. Expected /flashcards/generate. Current URL: " +
+                            currentUrl,
+                    );
+                }
             }
 
             // Add alternate heading check for CI environment
@@ -89,13 +115,17 @@ export class FlashcardsPage {
                 this.page.locator('h1:has-text("Generate Flashcards")').first(),
             ).toBeVisible({ timeout: process.env.CI ? 10000 : 5000 });
 
-            // Verify textarea exists
-            await expect(this.page.locator("textarea").first())
+            // Verify textarea exists using the more specific selector
+            await expect(
+                this.page.locator('textarea[aria-label="Source Text"]').first(),
+            )
                 .toBeVisible({ timeout: process.env.CI ? 10000 : 5000 });
 
             // Use a more specific selector for the generate button
             await expect(
-                this.page.getByRole("button", { name: "Generate" }).first(),
+                this.page.getByRole("button", { name: "Generate" }).filter({
+                    hasNotText: "Suggestions",
+                }).first(),
             ).toBeVisible({ timeout: process.env.CI ? 10000 : 5000 });
 
             console.log("All page elements verified successfully");
@@ -150,7 +180,8 @@ export class FlashcardsPage {
      * Fill the textarea with the provided text
      */
     async fillTextArea(text: string) {
-        await this.page.locator("textarea").first().fill(text);
+        await this.page.locator('textarea[aria-label="Source Text"]').first()
+            .fill(text);
         // Wait a moment for character counter to update
         await this.page.waitForTimeout(500);
     }
@@ -168,7 +199,10 @@ export class FlashcardsPage {
      * Click the generate button to start flashcard generation
      */
     async clickGenerate() {
-        await this.page.getByRole("button", { name: "Generate" }).first()
+        // Using the same specific selector as in expectLoaded
+        await this.page.getByRole("button", { name: "Generate" }).filter({
+            hasNotText: "Suggestions",
+        }).first()
             .click();
     }
 
