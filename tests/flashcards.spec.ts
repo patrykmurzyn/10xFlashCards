@@ -58,28 +58,30 @@ test.describe("Flashcards generation", () => {
                 timeout: 7000,
             });
             await loginPage.clickSignIn();
-            await page.waitForTimeout(1500); // Allow time for submission/redirect to begin
 
-            // Wait for successful login redirect - increase timeout in CI
+            // Wait for successful login by checking for a dashboard-specific element.
+            // This is often more reliable than just waiting for URL in CI environments.
             try {
-                await page.waitForURL("**/dashboard", {
-                    timeout: process.env.CI ? 20000 : 10000,
-                });
-                console.log("Successfully redirected to dashboard");
-                // More robust dashboard check
-                await expect(page.locator('h1:has-text("Welcome")')) // Replace with a more unique dashboard element if needed
-                    .toBeVisible({ timeout: process.env.CI ? 15000 : 10000 });
-                console.log("Dashboard verified after login.");
+                const dashboardHeaderLocator = page.locator(
+                    'h1:has-text("Welcome")',
+                ); // Use a reliable selector for your dashboard
+                await expect(dashboardHeaderLocator)
+                    .toBeVisible({ timeout: process.env.CI ? 25000 : 15000 }); // Increased timeout for CI
 
-                // Important: Wait a moment to ensure the session is established
-                await page.waitForTimeout(3000); // Increased wait time
+                // After the element is visible, also confirm the URL as an extra check.
+                expect(page.url()).toContain("/dashboard");
+                console.log(
+                    "Dashboard verified after login by element presence and URL.",
+                );
+
+                // Important: Wait a moment to ensure the session is fully established and any client-side updates complete.
+                await page.waitForTimeout(3000); // Slightly increased pause
             } catch (error) {
                 console.error(
                     "Failed to verify dashboard after initial login. URL: " +
                         page.url(),
                     error,
                 );
-                // Take screenshot to see what happened
                 await page.screenshot({
                     path: "screenshots/initial-login-dashboard-failure.png",
                 });
